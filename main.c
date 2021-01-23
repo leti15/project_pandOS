@@ -37,17 +37,18 @@ pcb_t* mkEmptyProcQ();
 int emptyProcQ (pcb_t *tp);
 void insertProcQ(pcb_t** tp, pcb_t* p);
 pcb_t* headProcQ(pcb_t** tp);
+pcb_t* removeProcQ(pcb_t **tp);
+pcb_t* outProcQ(pcb_t **tp, pcb_t *p);
 
-int main()
-{
+//main
+int main(){
 
     initPcbs();
+/*
     for (int i=0; i<MAXPROC;i++){
         printf("\nfreeTab (%d): %d", i, &pcbFree_table[i]);
 
     }
-
-
 
     pcb_t prova;
     printf("\n\n ind prova: %d\n",&prova);
@@ -61,11 +62,51 @@ int main()
         printf("\tind_prev:%d \ncont_prev: %d", (temp->p_prev), *(temp->p_prev) );
         temp=temp->p_next;
     }
+*/
+    pcb_PTR prova=mkEmptyProcQ();
+    /*printf("%d \n indirizzo contenuto: ",&prova);
+    printf("%d \n contenuto:",prova);
+    int a=emptyProcQ(prova);
+    printf("%d \n",a);*/
+
+    pcb_t boh;
+    pcb_PTR p=&boh;
+    pcb_PTR *tp=&prova;
+    insertProcQ(tp,p);
+    pcb_t boh2;
+    pcb_PTR p2=&boh2;
+
+    insertProcQ(tp,p2);
+    pcb_t boh3;
+    pcb_PTR p3=&boh3;
+   // insertProcQ(tp,p3);
+    /*printf("%d  boh \n  ",boh);
+    printf("%d prev \n", (*tp)->p_prev);
+    printf("%d  tp \n ", *tp);
+    printf("%d  prova \n ", prova);
+    printf("%d  indirizzo prova \n ", &prova);*/
+
+    printf(" boh %d \n",boh);
+    printf(" boh2 %d \n",boh2);
+    //printf(" boh3 %d \n",boh3);
+    printf("cont tp prima %d ",*tp);/*
+    pcb_PTR h=headProcQ(tp);
+    printf(" h %d \n",h);*/
+
+    /*pcb_PTR deleted=removeProcQ(tp);
+    if(deleted == NULL){printf("NULL");}
+    printf("removed %d \n",deleted);
+    printf("cont tp %d ",*tp);*/
+    pcb_PTR s=outProcQ(tp,p3);
+    printf("contenuto s %d \n",s);
+    printf("nuove sentinella %d \n",**tp);
+
 
     return 0;
-}
+}//end main
 
-
+/*Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
+ * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/
 void initPcbs(){
     /* pcbFree_table tutti =NULL
         pcbFree_h sarà Null
@@ -87,7 +128,7 @@ void initPcbs(){
     pcbFree_h=&pcbFree_table[0];
 
 
-    for (i=0; i<MAXPROC ;i++){
+    for (i=0; i<MAXPROC ;i++) {
         if(i==0){//primo pcb
             pcbFree_table[i].p_next=&pcbFree_table[i+1];
             pcbFree_table[i].p_prev=&pcbFree_table[MAXPROC-1];
@@ -97,7 +138,7 @@ void initPcbs(){
             pcbFree_table[i].p_next=&pcbFree_table[0];
             pcbFree_table[i].p_prev=&pcbFree_table[i-1];
         }
-        else{
+        else {
                 pcbFree_table[i].p_next=&pcbFree_table[i+1];
                 pcbFree_table[i].p_prev=&pcbFree_table[i-1];
         }
@@ -105,11 +146,14 @@ void initPcbs(){
     //CONTROLLARE SE SERVE
     n_pcb_free=MAXPROC;
 }
+
+/* inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)*/
+
 void freePcb(pcb_t *p){
 
     //controlliamo che sia possibile aggiungere un pcb
     if (n_pcb_free==MAXPROC){
-        printf("!!!!!!ERROR!!!!!");
+        printf("ERROR: Non è possibile aggiungere un pcb!!!!!");
     }
     else if (n_pcb_free==0){
         p->p_next=p;
@@ -131,6 +175,9 @@ void freePcb(pcb_t *p){
     }
 
 }
+/*Restituisce NULL se la pcbFree_h è vuota. Altrimenti rimuove un elemento dalla pcbFree,
+ * inizializza tutti i campi (NULL/0) e restituisce l’elemento rimosso.*/
+
 pcb_t *allocPcb(){ 
     if (pcbFree_h == NULL)
         return NULL;
@@ -156,20 +203,23 @@ pcb_t *allocPcb(){
         return tmp;
     }
 }
-
+/* Crea una lista di PCB, inizializzandola come lista vuota (i.e. restituisce NULL)*/
 pcb_t* mkEmptyProcQ() {
     pcb_PTR tmp;
-    tmp->p_next = NULL;
+    tmp= NULL;
     return tmp;
 }
-
+/*Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti*/
 int emptyProcQ(pcb_t* tp) {
-    if (tp == NULL)
-        return 1;
-    else
-        return 0;
+    if (tp == NULL){
+        return 1;}
+    else{
+        return 0;}
 }
 
+
+/*inserisce l’elemento puntato da p nella coda dei processi tp.
+ * La doppia indirezione su tp serve per poter inserire p come ultimo elemento della coda.*/
 void insertProcQ(pcb_t** tp, pcb_t* p) {
     pcb_PTR sent_tp = *tp;
     if (sent_tp != NULL)
@@ -190,17 +240,97 @@ void insertProcQ(pcb_t** tp, pcb_t* p) {
         p->p_next = p;
         p->p_prev = p;
     }
+    *tp=sent_tp;
 }
 
-pcb_t* headProcQ(pcb_t** tp)
-{
+/*Restituisce l’elemento in fondo alla coda dei processi tp, SENZA RIMUOVERLO.
+Ritorna NULL se la coda non ha elementi.*/
+
+pcb_t* headProcQ(pcb_t** tp){
     pcb_PTR sent = *tp;
 
-    if (sent == NULL)
+    if (sent == NULL){
         return NULL;
-    else
-    {
+    }
+    else{
         return sent->p_prev;
     }
 }
 
+pcb_t* removeProcQ(pcb_t **tp){
+    //primo elemento sentinella
+    pcb_PTR sent_tp= *tp;
+    pcb_PTR elem_toremove=*tp;
+
+    if(*tp == NULL){
+        return NULL;
+                        }
+    else if(sent_tp->p_next==sent_tp){
+        *tp=NULL;
+        return elem_toremove;
+    }
+    else{
+        //ultimo elemento
+        pcb_PTR tmp=sent_tp->p_prev;
+
+        //rimuovo l'elemento piu vecchio della coda tp ovvero la sentinella
+        //sentinella diventa il secondo elemento
+        sent_tp=sent_tp->p_next;
+        //il precedente della nuova sentinella diventa l'ultimo elemento
+        sent_tp->p_prev=tmp;
+        //l'ultimo elemento punta alla nuova sentinella
+        tmp->p_next=sent_tp;
+
+        *tp=sent_tp;
+        return elem_toremove;
+
+        }
+
+
+}
+pcb_t* outProcQ(pcb_t **tp, pcb_t *p) {
+    //primo elemento sentinella
+    pcb_PTR sent_tp = *tp;
+
+    pcb_PTR elem_toremove=NULL;
+
+    if (*tp == NULL) {
+
+
+        return NULL;
+    }
+    else{
+        int found =0;
+        pcb_PTR tmp=sent_tp;
+
+        do{
+                if(tmp == p){
+                found=1;
+                elem_toremove=tmp;
+                }
+                tmp=tmp->p_next;
+
+        }while(found==0 && tmp!=sent_tp);
+
+        if(found==1)
+        {
+            //caso in cui elemento da rimuovere sia uno solo
+            if (elem_toremove->p_prev == elem_toremove) {
+                *tp = NULL;
+            }
+                //caso in cui l'elemento è in mezzo ad altri elementi
+            else {
+                //se l'elemento da rimuovere è la sentinella ovvero il primo elemento
+                elem_toremove->p_prev->p_next = elem_toremove->p_next;
+                elem_toremove->p_next->p_prev = elem_toremove->p_prev;
+                if (elem_toremove == sent_tp) {
+                    *tp = elem_toremove->p_next;
+                }
+
+
+            }
+        }
+    return elem_toremove;
+    }
+
+}
