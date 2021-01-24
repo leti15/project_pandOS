@@ -40,6 +40,12 @@ pcb_t* headProcQ(pcb_t** tp);
 pcb_t* removeProcQ(pcb_t **tp);
 pcb_t* outProcQ(pcb_t **tp, pcb_t *p);
 
+//tree
+int emptyChild(pcb_t *p);
+void insertChild(pcb_t*prnt, pcb_t *p);
+pcb_t* removeChild(pcb_t *p);
+pcb_t *outChild(pcb_t* p);
+
 //main
 int main(){
 
@@ -62,12 +68,12 @@ int main(){
         printf("\tind_prev:%d \ncont_prev: %d", (temp->p_prev), *(temp->p_prev) );
         temp=temp->p_next;
     }
-*/
+
     pcb_PTR prova=mkEmptyProcQ();
     /*printf("%d \n indirizzo contenuto: ",&prova);
     printf("%d \n contenuto:",prova);
     int a=emptyProcQ(prova);
-    printf("%d \n",a);*/
+    printf("%d \n",a);
 
     pcb_t boh;
     pcb_PTR p=&boh;
@@ -84,7 +90,7 @@ int main(){
     printf("%d prev \n", (*tp)->p_prev);
     printf("%d  tp \n ", *tp);
     printf("%d  prova \n ", prova);
-    printf("%d  indirizzo prova \n ", &prova);*/
+    printf("%d  indirizzo prova \n ", &prova);
 
     printf(" boh %d \n",boh);
     printf(" boh2 %d \n",boh2);
@@ -96,11 +102,51 @@ int main(){
     /*pcb_PTR deleted=removeProcQ(tp);
     if(deleted == NULL){printf("NULL");}
     printf("removed %d \n",deleted);
-    printf("cont tp %d ",*tp);*/
+    printf("cont tp %d ",*tp);
     pcb_PTR s=outProcQ(tp,p3);
     printf("contenuto s %d \n",s);
     printf("nuove sentinella %d \n",**tp);
+*/
 
+    pcb_PTR hoppadre= &pcbFree_table[0];
+    printf("hop:%d \n",emptyChild(hoppadre));
+    pcb_PTR hop= &pcbFree_table[1];
+    insertChild(hoppadre,hop);
+    printf("hop:%d \n",emptyChild(hoppadre));
+    pcb_PTR hop2= &pcbFree_table[2];
+    insertChild(hoppadre,hop2);
+    pcb_PTR hop3= &pcbFree_table[3];
+    insertChild(hoppadre,hop3);
+
+    printf("contenuto di hop %d \n",*hop);
+    printf("contenuto di hop2 %d \n",*hop2);
+    printf("contenuto di hop3 %d \n",*hop3);
+
+
+    printf("contenuto del primo figlio: %d \n", *(hoppadre->p_child));
+    printf("contenuto del secondo figlio: %d \n", *(hoppadre->p_child->p_next_sib));
+    printf("contenuto del terzo figlio: %d \n", *(hoppadre->p_child->p_next_sib->p_next_sib));
+    printf("contenuto di nuovo del primo figlio %d \n",*(hoppadre->p_child->p_next_sib->p_next_sib->p_next_sib) );
+
+    printf("elem rimosso: %d \n",*outChild(hop3));
+
+    printf("contenuto del primo figlio: %d \n", *(hoppadre->p_child));
+    printf("contenuto del secondo figlio: %d \n", *(hoppadre->p_child->p_next_sib));
+    //printf("contenuto del terzo figlio: %d \n", *(hoppadre->p_child->p_next_sib->p_next_sib));
+    printf("contenuto di nuovo del primo figlio %d \n",*(hoppadre->p_child->p_next_sib->p_next_sib) );
+
+
+    printf("elem rimosso: %d \n",*outChild(hop2));
+    printf("elem rimosso: %d \n",*outChild(hop));
+    printf("contenuto del primo figlio: %d \n", (hoppadre->p_child));
+
+    /*
+    printf("elem rimosso: %d \n",*removeChild(hoppadre));
+    printf("elem rimosso: %d \n",*removeChild(hoppadre));
+    printf("elem rimosso: %d \n",*removeChild(hoppadre));
+    printf("elem rimosso: %d \n",removeChild(hoppadre));
+    printf("hoppadre p child %d\n",hoppadre->p_child);
+    */
 
     return 0;
 }//end main
@@ -292,6 +338,7 @@ pcb_t* outProcQ(pcb_t **tp, pcb_t *p) {
     //primo elemento sentinella
     pcb_PTR sent_tp = *tp;
 
+    //puntatore all'elemento da rimuovere
     pcb_PTR elem_toremove=NULL;
 
     if (*tp == NULL) {
@@ -331,6 +378,109 @@ pcb_t* outProcQ(pcb_t **tp, pcb_t *p) {
             }
         }
     return elem_toremove;
+    }
+
+}
+/*Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti. */
+int emptyChild(pcb_t *p){
+
+    if(p->p_child == NULL){
+        return 1;
+    }
+    return 0;
+}
+
+/*Inserisce il PCB puntato da p come figlio del PCB puntato da prnt.*/
+void insertChild(pcb_t *prnt, pcb_t *p){
+
+    if(prnt->p_child != NULL){
+
+        //troviamo il ptb esistente che punterà al nuovo ptb
+        pcb_PTR last=prnt->p_child->p_prev_sib;
+
+        //l'ultimo figlio punta al nuovo figlio
+        last->p_next_sib=p;
+        p->p_prev_sib=last;
+        p->p_prnt=prnt;
+        p->p_next_sib=prnt->p_child;
+        prnt->p_child->p_prev_sib=p;
+
+    }
+
+    else{
+        prnt->p_child=p;
+        p->p_prnt=prnt;
+
+        p->p_prev_sib=p;
+        p->p_next_sib=p;
+
+    }
+}
+
+/*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/
+pcb_t* removeChild(pcb_t *p){
+
+    if(p->p_child == NULL){
+        return NULL;
+    }
+    else if(p->p_child->p_prev_sib == p->p_child){
+        pcb_PTR elem_toremove=p->p_child;
+        p->p_child=NULL;
+
+        //pulisco il puntatore all'elemento rimosso
+        elem_toremove->p_next_sib=NULL;
+        elem_toremove->p_prev_sib=NULL;
+        elem_toremove->p_prnt=NULL;
+        return elem_toremove;
+        }
+    else{
+        pcb_PTR elem_toremove=p->p_child;
+        pcb_PTR last=p->p_child->p_prev_sib;
+        //collego il secondo elemento con l'ultimo
+        last->p_next_sib=p->p_child->p_next_sib;
+        p->p_child->p_next_sib->p_prev_sib=last;
+
+        //collego il padre con il nuovo primo figlio
+        p->p_child = p->p_child->p_next_sib;
+
+        //pulisco il puntatore all'elemento rimosso
+        elem_toremove->p_next_sib=NULL;
+        elem_toremove->p_prev_sib=NULL;
+        elem_toremove->p_prnt=NULL;
+        return elem_toremove;
+    }
+
+}
+
+
+
+
+/*Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB puntato da p non ha un padre, restituisce NULL,
+altrimenti restituisce l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi in una posizione arbitraria (ossia non è
+necessariamente il primo figlio del padre).*/
+
+pcb_t *outChild(pcb_t* p){
+    //se p non ha un padre
+    if(p->p_prnt == NULL){
+        return NULL;
+    }
+
+    //se p è l'unico figlio oppure è il primo figlio
+    else if(p->p_next_sib == p || p->p_prnt->p_child == p){
+        return removeChild(p->p_prnt);
+
+    }
+
+    else{
+        p->p_prev_sib->p_next_sib=p->p_next_sib;
+        p->p_next_sib->p_prev_sib=p->p_prev_sib;
+
+        //pulisco il puntatore all'elemento rimosso
+        p->p_next_sib=NULL;
+        p->p_prev_sib=NULL;
+        p->p_prnt=NULL;
+        return p;
+
     }
 
 }
