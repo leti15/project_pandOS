@@ -6,4 +6,4 @@ set(CMAKE_C_STANDARD 11)
 include_directories(.)
 
 add_executable(project_pandOS
-        main.c)
+        main.c struct_library.h)
