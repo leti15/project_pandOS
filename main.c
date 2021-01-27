@@ -138,36 +138,57 @@ int main(){
     printf("elem rimosso: %d \n",removeChild(hoppadre));
     printf("hoppadre p child %d\n",hoppadre->p_child);
     */
-    pcb_t asdrubale;
-    pcb_t letizia;
-    pcb_t poveroger;
+    pcb_PTR asdrubale= allocPcb();
+    pcb_PTR leon= allocPcb();
+    pcb_PTR poveroger= allocPcb();
 
     printf("semh: %d\n" ,semd_h);
    int semadd=349;
-   int control=insertBlocked(&semadd,&asdrubale);
+   int control=insertBlocked(&semadd,asdrubale);
     printf("-----------\n");
     printf("semdh semadd 349: %d\n",*(semd_h->s_semAdd));
-    printf("indirizzo di asdrubale: %d\n",&asdrubale);
+    printf("indirizzo di asdrubale: %d\n",asdrubale);
     printf("semdh sprocQ: %d\n",semd_h->s_procQ);
 
-    control=insertBlocked(&semadd,&letizia);
+    control=insertBlocked(&semadd,leon);
     printf("-----------\n");
     printf("semdh semadd 349: %d\n",*(semd_h->s_semAdd));
-    printf("indirizzo di letizia: %d\n",&letizia);
+    printf("indirizzo di letizia: %d\n",leon);
     printf("semdh sprocQ: %d\n",semd_h->s_procQ->p_next);
 
 
     int semadd2=22;
-    control=insertBlocked(&semadd2,&poveroger);
+    control=insertBlocked(&semadd2,poveroger);
     printf("-----------\n");
     printf("semdh s next s semadd 22: %d\n",*(semd_h->s_semAdd));
-    printf("indirizzo di poveroger: %d\n",&poveroger);
+    printf("indirizzo di poveroger: %d\n",poveroger);
     printf("semdh snext sprocQ: %d\n",semd_h->s_procQ);
 
     printf("-----------\n");
     printf("semdh sprocQ poverogerald: %d\n",semd_h->s_procQ);
     printf("semdh snext sprocQ asdrubale: %d\n",semd_h->s_next->s_procQ);
     printf("semdh sprocQ letizia: %d\n",semd_h->s_next->s_procQ->p_next);
+
+    printf("\nprnt: %d child: %d\n", asdrubale->p_prnt, asdrubale->p_child);
+
+    /*printf("\nprova remove: %d", removeBlocked(&semadd));
+    printf("\nprova remove2: %d", removeBlocked(&semadd));
+    printf("\nprova remove3: %d", removeBlocked(&semadd));*/
+
+    printf("\nheadBolcked sem1: %d", headBlocked(&semadd) );
+    printf("\nheadBolcked sem2: %d", headBlocked(&semadd2) );
+
+    printf ("prova outbolcked1: %d", outBlocked(leon));
+
+    printf("\nheadBolcked sem1: %d", headBlocked(&semadd) );
+    printf("\nheadBolcked sem2: %d", headBlocked(&semadd2) );
+
+    printf("\nASL ( %d ) : %d",  *(semd_h->s_semAdd) ,semd_h);
+    printf("\nASL next ( %d ) : %d",*(semd_h->s_next->s_semAdd) , semd_h->s_next);
+    printf("\nleon: %d, sem next: %d", leon, semd_h->s_next->s_procQ);
+
+
+
 
     return 0;
 }//end main
@@ -244,13 +265,13 @@ void freePcb(pcb_t *p){
     }
 
 }
+
 /*Restituisce NULL se la pcbFree_h è vuota. Altrimenti rimuove un elemento dalla pcbFree,
  * inizializza tutti i campi (NULL/0) e restituisce l’elemento rimosso.*/
-
-pcb_t *allocPcb(){ 
+pcb_t *allocPcb(){
     if (pcbFree_h == NULL)
         return NULL;
-    else 
+    else
     {
         //tmp è l'elemento estratto dalla coda
         pcb_PTR tmp = pcbFree_h;
@@ -268,16 +289,18 @@ pcb_t *allocPcb(){
         tmp->p_prev_sib = NULL;
         tmp->p_prnt = NULL;
         tmp->p_semAdd = NULL;
-       
+
         return tmp;
     }
 }
+
 /* Crea una lista di PCB, inizializzandola come lista vuota (i.e. restituisce NULL)*/
 pcb_t* mkEmptyProcQ() {
     /*pcb_PTR tmp;
     tmp= NULL;
     return tmp;*/ return NULL;
 }
+
 /*Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti*/
 int emptyProcQ(pcb_t* tp) {
     if (tp == NULL){
@@ -312,9 +335,8 @@ void insertProcQ(pcb_t** tp, pcb_t* p) {
     *tp=sent_tp;
 }
 
-/*Restituisce l’elemento in fondo alla coda dei processi tp, SENZA RIMUOVERLO.
+/*Restituisce l’elemento in fondo alla coda (ultimo immesso) dei processi tp, SENZA RIMUOVERLO.
 Ritorna NULL se la coda non ha elementi.*/
-
 pcb_t* headProcQ(pcb_t** tp){
     pcb_PTR sent = *tp;
 
@@ -446,64 +468,62 @@ void insertChild(pcb_t *prnt, pcb_t *p){
 
 /*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/
 pcb_t* removeChild(pcb_t *p){
-
-    if(p->p_child == NULL){
-        return NULL;
-    }
-    else if(p->p_child->p_prev_sib == p->p_child){
-        pcb_PTR elem_toremove=p->p_child;
-        p->p_child=NULL;
-
-        //pulisco il puntatore all'elemento rimosso
-        elem_toremove->p_next_sib=NULL;
-        elem_toremove->p_prev_sib=NULL;
-        elem_toremove->p_prnt=NULL;
-        return elem_toremove;
+    if ( p != NULL ){
+        if(p->p_child == NULL){
+            return NULL;
         }
-    else{
-        pcb_PTR elem_toremove=p->p_child;
-        pcb_PTR last=p->p_child->p_prev_sib;
-        //collego il secondo elemento con l'ultimo
-        last->p_next_sib=p->p_child->p_next_sib;
-        p->p_child->p_next_sib->p_prev_sib=last;
+        else if(p->p_child->p_prev_sib == p->p_child){
+            pcb_PTR elem_toremove=p->p_child;
+            p->p_child=NULL;
 
-        //collego il padre con il nuovo primo figlio
-        p->p_child = p->p_child->p_next_sib;
+            //pulisco il puntatore all'elemento rimosso
+            elem_toremove->p_next_sib=NULL;
+            elem_toremove->p_prev_sib=NULL;
+            elem_toremove->p_prnt=NULL;
+            return elem_toremove;
+            }
+        else{
+            pcb_PTR elem_toremove=p->p_child;
+            pcb_PTR last=p->p_child->p_prev_sib;
+            //collego il secondo elemento con l'ultimo
+            last->p_next_sib=p->p_child->p_next_sib;
+            p->p_child->p_next_sib->p_prev_sib=last;
 
-        //pulisco il puntatore all'elemento rimosso
-        elem_toremove->p_next_sib=NULL;
-        elem_toremove->p_prev_sib=NULL;
-        elem_toremove->p_prnt=NULL;
-        return elem_toremove;
-    }
+            //collego il padre con il nuovo primo figlio
+            p->p_child = p->p_child->p_next_sib;
+
+            //pulisco il puntatore all'elemento rimosso
+            elem_toremove->p_next_sib=NULL;
+            elem_toremove->p_prev_sib=NULL;
+            elem_toremove->p_prnt=NULL;
+            return elem_toremove;
+        }
+    }else {return NULL;}
 
 }
-
-
-
 
 /*Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB puntato da p non ha un padre, restituisce NULL,
 altrimenti restituisce l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi in una posizione arbitraria (ossia non è
 necessariamente il primo figlio del padre).*/
-
 pcb_t *outChild(pcb_t* p){
-    //se p non ha un padre oppure se p è l'unico figlio oppure è il primo figlio
-    if(p->p_prnt == NULL || p->p_next_sib == p || p->p_prnt->p_child == p){
-        return removeChild(p->p_prnt);
 
-    }
+    if (p != NULL){
+        if(p->p_prnt == NULL || p->p_next_sib == p || p->p_prnt->p_child == p){//se p non ha un padre oppure se p è l'unico figlio oppure è il primo figlio
+            return removeChild(p->p_prnt);
 
-    else{
-        p->p_prev_sib->p_next_sib=p->p_next_sib;
-        p->p_next_sib->p_prev_sib=p->p_prev_sib;
+        }
+        else{
+            p->p_prev_sib->p_next_sib=p->p_next_sib;
+            p->p_next_sib->p_prev_sib=p->p_prev_sib;
 
-        //pulisco il puntatore all'elemento rimosso
-        p->p_next_sib=NULL;
-        p->p_prev_sib=NULL;
-        p->p_prnt=NULL;
-        return p;
+            //pulisco il puntatore all'elemento rimosso
+            p->p_next_sib=NULL;
+            p->p_prev_sib=NULL;
+            p->p_prnt=NULL;
+            return p;
 
-    }
+        }
+    }else {return NULL;}
 
 }
 
@@ -511,7 +531,6 @@ pcb_t *outChild(pcb_t* p){
 /*Viene inserito il PCB puntato da p nella coda deiprocessi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
  * alloca un nuovo SEMD dalla lista di quelli liberi (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna (i.e.
 key e s_procQ). Se non è possibile allocare un nuovo SEMD perché la lista di quelli liberi è vuota, restituisce TRUE. In tutti gli altri casi, restituisce FALSE. */
-
 int insertBlocked(int *semAdd,pcb_t *p){
     semd_PTR tmp=semd_h;
 
@@ -527,6 +546,7 @@ int insertBlocked(int *semAdd,pcb_t *p){
 
         //aggiungo il semaforo nella lista dei semafori attivi ASL
         semd_h=newsem;
+        p->p_semAdd= semAdd;
         //inserisco p nel nuovo semaforo
         insertProcQ(&(newsem->s_procQ),p);
     return 0;
@@ -545,6 +565,7 @@ int insertBlocked(int *semAdd,pcb_t *p){
         while(tmp != NULL){
 
             if( *(tmp->s_semAdd) == *semAdd ){
+                p->p_semAdd= semAdd;
                 insertProcQ(&(tmp->s_procQ),p);
                 return 0;
             }
@@ -563,6 +584,7 @@ int insertBlocked(int *semAdd,pcb_t *p){
         //aggiungo il semaforo nella lista dei semafori attivi ASL
         semd_h=newsem;
         //inserisco p nel nuovo semaforo
+        p->p_semAdd= semAdd;
         insertProcQ(&(newsem->s_procQ),p);
 
         return 0;
@@ -581,13 +603,11 @@ corrispondente dalla ASL e lo inserisce nella coda dei descrittori liberi (semdF
 pcb_t* removeBlocked(int *semAdd){
 
     //se la lista di semafori attivi è vuota, non ho niente da rimuovere
-  if(semd_h == NULL){
-      return NULL;
-  }
-  //se la lista di semafori attivi ha almeno un elemento
+    if(semd_h == NULL){
+          return NULL;
 
-  else{
-        semd_PTR elem_toremove=NULL;
+    }else{ //se la lista di semafori attivi ha almeno un elemento
+        pcb_PTR elem_toremove=NULL;
         semd_PTR tmp=semd_h;
 
         semd_PTR old_tmp=NULL;
@@ -612,19 +632,11 @@ pcb_t* removeBlocked(int *semAdd){
 
                             tmp->s_next=semdFree_h; //aggiungiamo il semaforo alla lista di semafori liberi
                             semdFree_h=tmp;
-
-
                         }
-
                 }
-
                 elem_toremove=removeProcQ(&(tmp->s_procQ));
                 outChild(elem_toremove);
-
             }
-
-
-
             old_tmp=tmp;
             tmp=tmp->s_next;
         }
@@ -651,40 +663,31 @@ pcb_t* outBlocked(pcb_t *p){
         semd_PTR tmp=semd_h;
         semd_PTR old_tmp=NULL;
         pcb_PTR elem_toremove=NULL;
+
         int found=0;
         while(tmp != NULL && found == 0){ //cerco il semaforo di p nella lista di semafori attivi (ASL)
-            if(*(tmp->s_semAdd) = *(p->p_semAdd)){
+            if(*(tmp->s_semAdd) == *(p->p_semAdd)){
                 found=1;
             }
             else{
                 old_tmp=tmp;
                 tmp=tmp->s_next;
-
             }
         }
 
         if(found == 1){ //se il semaforo è presente nella lista dei semafori attivi
             if(tmp->s_procQ->p_next == tmp->s_procQ){ //se c'è un solo processo nella coda del semaforo
-
                 if(old_tmp == NULL){ //se il puntatore al semaforo precedente è null ovvero il samaforo trovato è il primo,  rimuoviamo il semaforo e spostiamo la sentinella
                     semd_h=tmp->s_next;
                     tmp->s_next= semdFree_h;
                     semdFree_h=tmp;
-                }
-
-                else{
+                }else{
                     old_tmp->s_next=tmp->s_next; //togliamo il semaforo  dalla lista di semafori bloccati (asl)
-
-
                     tmp->s_next=semdFree_h; //aggiungiamo il semaforo alla lista di semafori liberi
                     semdFree_h=tmp;
-
-
                 }
-
-
             }
-            elem_toremove=outProcQ(&(tmp->s_procQ),p);
+            elem_toremove=outProcQ(&(tmp->s_procQ), p);
             outChild(elem_toremove);
         }
         else{
@@ -702,10 +705,9 @@ se compare ma la sua coda dei processi è vuota.*/
 pcb_t* headBlocked(int *semAdd){
     semd_PTR tmp=semd_h;
     while(tmp != NULL ){
-        if(*(tmp->s_semAdd) = *(semAdd)){
+        if(*(tmp->s_semAdd) == *(semAdd)){
             /*if(tmp->s_procQ == NULL) {return ERRORE MOOOOOOOOOOOOLTO GRAVE (LETIZIA);}*/
-            return tmp->s_procQ;
-
+            return headProcQ(&(tmp->s_procQ));
         }
         tmp=tmp->s_next;
     }
@@ -714,36 +716,25 @@ pcb_t* headBlocked(int *semAdd){
 
 /*Inizializza la lista dei semdFree in modo da contenere tutti gli elementi della semdTable. Questo metodo viene invocato una volta sola durante
 l’inizializzazione della struttura dati*/
-
 void initASL(){
-    /* pcbFree_table tutti =NULL
-       pcbFree_h sarà Null
-   */
     int i;
     for (i=0; i<MAXPROC; i++){
         semd_table[i].s_next=NULL;
         semd_table[i].s_semAdd=NULL;
         semd_table[i].s_procQ=NULL;
-
     }
-
     //creo sentinella
     semdFree_h=&semd_table[0];
-
 
     for (i=0; i<MAXPROC ;i++) {
         if(i==0){//primo semaforo
             semd_table[i].s_next=&semd_table[i+1];
-
         }
         else if(i==MAXPROC-1){//ultimo semaforo
             semd_table[i].s_next=&semd_table[0];
-
         }
         else {
             semd_table[i].s_next=&semd_table[i+1];
-
         }
     }
-
 }
