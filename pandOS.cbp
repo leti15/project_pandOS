@@ -31,15 +31,22 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="asl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="asl.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="pcb.h">
-			<Option target="&lt;{~None~}&gt;" />
+		<Unit filename="p1test.c">
+			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="semd.h">
-			<Option target="&lt;{~None~}&gt;" />
+		<Unit filename="pandos_const.h" />
+		<Unit filename="pandos_types.h" />
+		<Unit filename="pcb.c">
+			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="pcb.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

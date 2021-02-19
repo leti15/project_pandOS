@@ -6,3 +6,8 @@
 
 1611783626 c:\users\letiz\documents\università\2_anno\1_sem\sistemi operativi\progetto\pandos\project_pandos\struct_library.h
 
+1613759297 source:c:\users\letiz\documents\università\2_anno\1_sem\sistemi operativi\progetto\project_pandos\main.c
+	<stdio.h>
+	<stdlib.h>
+	"struct_library.h"
+
