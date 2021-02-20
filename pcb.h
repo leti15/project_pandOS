@@ -32,8 +32,8 @@ void insertProcQ(pcb_t** tp, pcb_t* p);
 Ritorna NULL se la coda non ha elementi.*/
 pcb_t* headProcQ(pcb_t** tp);
 
-/*Rimuove l’elemento piu’ vecchio dalla coda tp. Ritorna NULL se la coda è vuota, altrimenti ritorna il puntatore all’elemento
-rimosso dalla lista.*/
+/*Rimuove l’elemento piu’ vecchio dalla coda tp. Ritorna NULL se la coda è vuota, altrimenti ritorna il puntatore
+all’elemento rimosso dalla lista.*/
 pcb_t* removeProcQ(pcb_t **tp);
 
 /*Rimuove il PCB puntato da p dalla coda dei processi puntata da tp. Se p non è presente nella coda, restituisce NULL (p può trovarsi in una posizione arbitraria della coda).*/

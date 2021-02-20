@@ -8,92 +8,37 @@ void initPcbs(){
         pcbFree_h sarà Null
     */
     for (int i=0; i<MAXPROC; i++){
-        pcbFree_table[i].p_next= NULL;
-        pcbFree_table[i].p_prev= NULL;
-        pcbFree_table[i].p_prnt= NULL;
-        pcbFree_table[i].p_child= NULL;
-        pcbFree_table[i].p_next_sib= NULL;
-        pcbFree_table[i].p_prev_sib= NULL;
-        //pcbFree_table[i].p_s=
-        //pcbFree_table[i].p_time=
-        pcbFree_table[i].p_semAdd= NULL;
+        pcbFree_table[i].p_next = NULL;
+        pcbFree_table[i].p_prev = NULL;
+        pcbFree_table[i].p_prnt = NULL;
+        pcbFree_table[i].p_child = NULL;
+        pcbFree_table[i].p_next_sib = NULL;
+        pcbFree_table[i].p_prev_sib = NULL;
+        //pcbFree_table[i].p_s = ??;
+        pcbFree_table[i].p_time = 0;
+        pcbFree_table[i].p_semAdd = NULL;
     }
-
-/*
-    pcb_PTR tmp, head = &pcbFree_table[0];
-    tmp = head;
-
-    for (int i = 1; i < MAXPROC-1; i++)
-    {
-        tmp->p_next = &pcbFree_table[i];
-
-        printf("--%d \n", tmp);
-        tmp = tmp->p_next;
-    }
-    tmp->p_next = &pcbFree_table[MAXPROC-1];
-    tmp->p_next->p_next = NULL;
-    printf("__%d \n", tmp->p_next->p_next );
-    pcbFree_h = head;
-
-
-
-    printf("!!!!!!!!!!!\n");*/
 
     //creo sentinella
-    pcbFree_h= &pcbFree_table[0];
+    pcbFree_h = &pcbFree_table[0];
 
     //primo pcb
-    pcbFree_table[0].p_next= &pcbFree_table[1];
-    //pcbFree_table[0].p_prev= &pcbFree_table[MAXPROC-1];
+    pcbFree_table[0].p_next = &pcbFree_table[1];
     for (int i=1; i<MAXPROC-1; i++) {
         pcbFree_table[i].p_next= &pcbFree_table[i+1];
-        //pcbFree_table[i].p_prev= &pcbFree_table[i-1];
     }
     //ultimo pcb
     pcbFree_table[MAXPROC-1].p_next= NULL;
-    //pcbFree_table[MAXPROC-1].p_next= &pcbFree_table[0];
-    //pcbFree_table[MAXPROC-1].p_prev= &pcbFree_table[MAXPROC-2];
 }
 
 /* inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)*/
 void freePcb(pcb_t *p){
-    pcb_PTR tmp = pcbFree_h;
 
-    if (tmp != NULL){ //se pcbFree_h non è vuota
-
-    pcb_PTR tmp = pcbFree_h;
-	int n_pcb_free = 1;
-    if (tmp != NULL){
-        while(tmp->p_next != NULL){
-            //printf("!!!!!!!!!!!!! \n");
-                n_pcb_free = n_pcb_free + 1;
-                tmp = tmp->p_next;
-                printf("%d tmp %d\n", n_pcb_free, tmp);
-            }
-        }
-    printf("npcb %d \n", n_pcb_free);
-        //controlliamo che sia possibile aggiungere un pcb
-        if (n_pcb_free == MAXPROC){
-            printf("ERROR: Non è possibile aggiungere un pcb!!!!!");
-        }else{
-
-        /*
-            // inserimento in coda
-            //il "prev" del primo elemento diventerà p
-            //il "next" dell'ultimo elemento diventerà p
-            pcb_PTR temp = pcbFree_h->p_prev; //temp è l'ultimo pcb
-            pcbFree_h->p_prev = p; //il primo punterà al nuovo p
-            p->p_prev = temp;//il NUOVO ultimo (=p) avrà come precedente il VECCHIO ultimo (=temp)
-            temp->p_next = p; //il VECCHIO ultimo avrà come successivo il NUOVO ultimo
-            p->p_next = pcbFree_h; // il NUOVO ultimo avrà come successore la sentinella quindi il primo pcb
-        */
-        tmp->p_next = p;
+    if (pcbFree_h != NULL){ //se pcbFree_h non è vuota
+        p->p_next = pcbFree_h;
+        pcbFree_h = p;
+    } else{ //se è vuota aggiungo p come unico elemento
         p->p_next = NULL;
-
-        }
-    } else{
-        p->p_next = p;
-        //p->p_prev = p;
         pcbFree_h = p;
     }
 
@@ -114,10 +59,6 @@ pcb_t *allocPcb(){
             pcbFree_h = pcbFree_h->p_next;
         }else { pcbFree_h = NULL; } //se è l'ultimo elemento metto la sentinella a null
 
-        //Il nuovo primo punta all'ultimo
-        //pcbFree_h->p_prev = tmp->p_prev;
-        //L'ultimo punta al nuovo primo
-        //tmp->p_prev->p_next = pcbFree_h;
         //reset di tmp
         tmp->p_child = NULL;
         tmp->p_next = NULL;
@@ -132,9 +73,7 @@ pcb_t *allocPcb(){
 
 /* Crea una lista di PCB, inizializzandola come lista vuota (i.e. restituisce NULL)*/
 pcb_t* mkEmptyProcQ() {
-    /*pcb_PTR tmp;
-    tmp= NULL;
-    return tmp;*/ return NULL;
+    return NULL;
 }
 
 /*Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti*/
@@ -174,8 +113,8 @@ pcb_t* headProcQ(pcb_t** tp){
         return NULL;
 }
 
-/*Rimuove l’elemento piu’ vecchio dalla coda tp. Ritorna NULL se la coda è vuota, altrimenti ritorna il puntatore all’elemento
-rimosso dalla lista.*/
+/*Rimuove l’elemento piu’ vecchio dalla coda tp. Ritorna NULL se la coda è vuota, altrimenti ritorna il puntatore
+all’elemento rimosso dalla lista.*/
 pcb_t* removeProcQ(pcb_t **tp){
 
     if (tp != NULL){
@@ -322,9 +261,8 @@ pcb_t* removeChild(pcb_t *p){
 altrimenti restituisce l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi in una posizione arbitraria (ossia non è
 necessariamente il primo figlio del padre).*/
 pcb_t *outChild(pcb_t* p){
-
     if (p != NULL){
-        if(p->p_prnt == NULL || p->p_next_sib == p || p->p_prnt->p_child == p){//se p non ha un padre oppure se p è l'unico figlio oppure è il primo figlio
+        if(p->p_prnt == NULL || p->p_prnt->p_child == p){//se p non ha un padre oppure se p è l'unico figlio oppure è il primo figlio
             return removeChild(p->p_prnt);
 
         }else{

@@ -130,17 +130,6 @@ void main() {
 	initPcbs();
 	printf("Initialized process control blocks   \n");
 
-	 pcb_PTR tmp = pcbFree_h;
-        int n_pcb_free = 1;
-        if (tmp != NULL){
-            while(tmp->p_next != NULL){
-                //printf("!!!!!!!!!!!!! \n");
-                    n_pcb_free = n_pcb_free + 1;
-                    tmp = tmp->p_next;
-                    printf("%d tmp %d\n", n_pcb_free, tmp);
-                }
-            }
-
 	/* Check allocProc */
 	for (i = 0; i < MAXPROC; i++) {
 		if ((procp[i] = allocPcb()) == NULL)
@@ -151,20 +140,6 @@ void main() {
 		printf("allocPcb: allocated more than MAXPROC entries   ");
 	}
 	printf("allocPcb ok   \n");
-
-
-	tmp = pcbFree_h;
-	n_pcb_free = 1;
-        if (tmp != NULL){
-            while(tmp->p_next != NULL){
-                //printf("!!!!!!!!!!!!! \n");
-                    n_pcb_free = n_pcb_free + 1;
-                    tmp = tmp->p_next;
-                    printf("%d tmp %d\n", n_pcb_free, tmp);
-                }
-            }
-
-
 
 	/* return the last 10 entries back to free list */
 	for (i = 10; i < MAXPROC; i++)
@@ -292,9 +267,13 @@ void main() {
 		if (insertBlocked(&sem[i], procp[i]))
 			printf("insertBlocked(2): unexpected TRUE   ");
 	}
-
+    printf("!!!!!!!!!!!!!!!!!!!!\n");
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
+
+	printf("!!!!!!!!!!!!!!!!!!!!111\n");
+
+
 	if (insertBlocked(&sem[11],p))
 		printf("removeBlocked: fails to return to free list   ");
 

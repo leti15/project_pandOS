@@ -74,9 +74,11 @@ pcb_t* removeBlocked(int *semAdd){
 
     if (semAdd != NULL){    //se la lista di semafori attivi è vuota, non ho niente da rimuovere
         if(semd_h == NULL){
-              return NULL;
+            printf ("case semd_h == NULL \n");
+            return NULL;
 
         }else{ //se la lista di semafori attivi ha almeno un elemento
+            printf("case ASL ha almeno un elem\n");
             pcb_PTR elem_toremove = NULL;
             semd_PTR tmp = semd_h;
 
@@ -85,21 +87,33 @@ pcb_t* removeBlocked(int *semAdd){
 
             while(tmp != NULL && found == 0){
                 if(*(tmp->s_semAdd) == *semAdd){ //ho trovato il semaforo
+                    printf("find!!  %d == %d\n", *(tmp->s_semAdd), *semAdd);
                     found = 1;
+                    printf ("%d %d %d\n", tmp, tmp->s_procQ, tmp->s_procQ->p_next);
+                    printf ("%d %d\n",tmp ,tmp->s_procQ);
+                    printf ("%d\n", (tmp->s_procQ->p_next == tmp->s_procQ));
                     if(tmp->s_procQ->p_next == tmp->s_procQ){ // caso in cui c'è un solo elem da rimuovere, sposto codesto semaforo tra quelli liberi
+                            printf ("case solo un  elemento\n");
                             if(old_tmp == NULL){ //se il puntatore al semaforo precedente è null ovvero il samaforo trovato è il primo,  rimuoviamo il semaforo e spostiamo la sentinella
+                                printf ("case primo semd\n");
                                 semd_h = tmp->s_next;
                                 tmp->s_next = semdFree_h;
                                 semdFree_h = tmp;
 
                             }else{
+                                printf ("case non primo semd\n");
                                 old_tmp->s_next = tmp->s_next; //togliamo il semaforo  dalla lista di semafori bloccati (asl)
                                 tmp->s_next = semdFree_h; //aggiungiamo il semaforo alla lista di semafori liberi
                                 semdFree_h = tmp;
                             }
                     }
+                    printf ("*****************\n");
+
                     elem_toremove = removeProcQ(&(tmp->s_procQ));
+                    printf ("***********111******  %d\n", elem_toremove);
+
                     outChild(elem_toremove);
+                    printf ("---------------------------\n");
                 }
                 old_tmp = tmp;
                 tmp = tmp->s_next;
