@@ -11,3 +11,36 @@
 	<stdlib.h>
 	"struct_library.h"
 
+1613762276 source:/home/letizia/Documents/Universita/SO/project_pandOS/main.c
+	<stdio.h>
+	<stdlib.h>
+	"struct_library.h"
+
+1613776134 source:/home/letizia/Documents/Universita/SO/project_pandOS/asl.c
+	"asl.h"
+
+1613762276 /home/letizia/Documents/Universita/SO/project_pandOS/asl.h
+	"pandos_const.h"
+	"pandos_types.h"
+
+1613762276 /home/letizia/Documents/Universita/SO/project_pandOS/pandos_const.h
+	<umps3/umps/const.h>
+
+1613762425 /home/letizia/Documents/Universita/SO/project_pandOS/pandos_types.h
+	<umps3/umps/types.h>
+	"pandos_const.h"
+
+1613814882 source:/home/letizia/Documents/Universita/SO/project_pandOS/p1test.c
+	"pandos_const.h"
+	"pandos_types.h"
+	<umps3/umps/libumps.h>
+	"pcb.h"
+	"asl.h"
+
+1613815029 /home/letizia/Documents/Universita/SO/project_pandOS/pcb.h
+	"pandos_const.h"
+	"pandos_types.h"
+
+1613814972 source:/home/letizia/Documents/Universita/SO/project_pandOS/pcb.c
+	"pcb.h"
+

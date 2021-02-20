@@ -35,9 +35,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="asl.h" />
-		<Unit filename="main.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="p1test.c">
 			<Option compilerVar="CC" />
 		</Unit>

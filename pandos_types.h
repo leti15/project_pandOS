@@ -31,7 +31,7 @@ typedef struct pcb_t {
      int *p_semAdd; /* ptr to semaphore on */
     /* which proc is blocked */
     /* support layer information */
-     support_t *p_supportStruct;
+     //support_t *p_supportStruct;
 
 
 }  pcb_t, *pcb_PTR;
@@ -43,7 +43,7 @@ typedef struct semd_t {
      int *s_semAdd;
     /* ptr to tail of the queue of procs.
     blocked on this sem. */
-     pcb_PTRs_procQ;
+     pcb_PTR s_procQ;
 } semd_t, *semd_PTR;
 
 #endif

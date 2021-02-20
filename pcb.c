@@ -1,4 +1,5 @@
 #include "pcb.h"
+#define NULL 0
 
 /*Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
  * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/
@@ -6,8 +7,7 @@ void initPcbs(){
     /* pcbFree_table tutti =NULL
         pcbFree_h sarà Null
     */
-    int i;
-    for (i=0; i<MAXPROC; i++){
+    for (int i=0; i<MAXPROC; i++){
         pcbFree_table[i].p_next= NULL;
         pcbFree_table[i].p_prev= NULL;
         pcbFree_table[i].p_prnt= NULL;
@@ -19,56 +19,84 @@ void initPcbs(){
         pcbFree_table[i].p_semAdd= NULL;
     }
 
+/*
+    pcb_PTR tmp, head = &pcbFree_table[0];
+    tmp = head;
+
+    for (int i = 1; i < MAXPROC-1; i++)
+    {
+        tmp->p_next = &pcbFree_table[i];
+
+        printf("--%d \n", tmp);
+        tmp = tmp->p_next;
+    }
+    tmp->p_next = &pcbFree_table[MAXPROC-1];
+    tmp->p_next->p_next = NULL;
+    printf("__%d \n", tmp->p_next->p_next );
+    pcbFree_h = head;
+
+
+
+    printf("!!!!!!!!!!!\n");*/
+
     //creo sentinella
     pcbFree_h= &pcbFree_table[0];
 
-
-    for (i=0; i<MAXPROC ;i++) {
-        if(i == 0){//primo pcb
-            pcbFree_table[i].p_next= &pcbFree_table[i+ 1];
-            pcbFree_table[i].p_prev= &pcbFree_table[MAXPROC- 1];
-
-        }
-        else if(i==MAXPROC-1){//ultimo pcb
-            pcbFree_table[i].p_next=&pcbFree_table[0];
-            pcbFree_table[i].p_prev=&pcbFree_table[i -1];
-        }
-        else {
-                pcbFree_table[i].p_next=&pcbFree_table[i+ 1];
-                pcbFree_table[i].p_prev=&pcbFree_table[i- 1];
-        }
+    //primo pcb
+    pcbFree_table[0].p_next= &pcbFree_table[1];
+    //pcbFree_table[0].p_prev= &pcbFree_table[MAXPROC-1];
+    for (int i=1; i<MAXPROC-1; i++) {
+        pcbFree_table[i].p_next= &pcbFree_table[i+1];
+        //pcbFree_table[i].p_prev= &pcbFree_table[i-1];
     }
-
+    //ultimo pcb
+    pcbFree_table[MAXPROC-1].p_next= NULL;
+    //pcbFree_table[MAXPROC-1].p_next= &pcbFree_table[0];
+    //pcbFree_table[MAXPROC-1].p_prev= &pcbFree_table[MAXPROC-2];
 }
 
 /* inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)*/
 void freePcb(pcb_t *p){
-    int n_pcb_free = 0;
     pcb_PTR tmp = pcbFree_h;
 
-    while(tmp != NULL){
-        n_pcb_free = n_pcb_free+ 1;
-        tmp = tmp->p_next;
-    }
-    //controlliamo che sia possibile aggiungere un pcb
-    if (n_pcb_free == MAXPROC){
-        printf("ERROR: Non è possibile aggiungere un pcb!!!!!");
-    }
-    else if (n_pcb_free == 0){
+    if (tmp != NULL){ //se pcbFree_h non è vuota
+
+    pcb_PTR tmp = pcbFree_h;
+	int n_pcb_free = 1;
+    if (tmp != NULL){
+        while(tmp->p_next != NULL){
+            //printf("!!!!!!!!!!!!! \n");
+                n_pcb_free = n_pcb_free + 1;
+                tmp = tmp->p_next;
+                printf("%d tmp %d\n", n_pcb_free, tmp);
+            }
+        }
+    printf("npcb %d \n", n_pcb_free);
+        //controlliamo che sia possibile aggiungere un pcb
+        if (n_pcb_free == MAXPROC){
+            printf("ERROR: Non è possibile aggiungere un pcb!!!!!");
+        }else{
+
+        /*
+            // inserimento in coda
+            //il "prev" del primo elemento diventerà p
+            //il "next" dell'ultimo elemento diventerà p
+            pcb_PTR temp = pcbFree_h->p_prev; //temp è l'ultimo pcb
+            pcbFree_h->p_prev = p; //il primo punterà al nuovo p
+            p->p_prev = temp;//il NUOVO ultimo (=p) avrà come precedente il VECCHIO ultimo (=temp)
+            temp->p_next = p; //il VECCHIO ultimo avrà come successivo il NUOVO ultimo
+            p->p_next = pcbFree_h; // il NUOVO ultimo avrà come successore la sentinella quindi il primo pcb
+        */
+        tmp->p_next = p;
+        p->p_next = NULL;
+
+        }
+    } else{
         p->p_next = p;
-        p->p_prev = p;
+        //p->p_prev = p;
         pcbFree_h = p;
     }
-    else{
-        // inserimento in coda
-        //il "prev" del primo elemento diventerà p
-        //il "next" dell'ultimo elemento diventerà p
-        pcb_PTR temp = pcbFree_h->p_prev; //temp è l'ultimo pcb
-        pcbFree_h->p_prev = p; //il primo punterà al nuovo p
-        p->p_prev = temp;//il NUOVO ultimo (=p) avrà come precedente il VECCHIO ultimo (=temp)
-        temp->p_next = p; //il VECCHIO ultimo avrà come successivo il NUOVO ultimo
-        p->p_next = pcbFree_h; // il NUOVO ultimo avrà come successore la sentinella quindi il primo pcb
-    }
+
 }
 
 /*Restituisce NULL se la pcbFree_h è vuota. Altrimenti rimuove un elemento dalla pcbFree,
@@ -80,12 +108,16 @@ pcb_t *allocPcb(){
     {
         //tmp è l'elemento estratto dalla coda
         pcb_PTR tmp = pcbFree_h;
-        //La sentinella punta l'elemento successivo a tmp
-        pcbFree_h = tmp->p_next;
+
+        if (pcbFree_h->p_next != NULL){//se non è l'ultimo elemento
+            //La sentinella punta l'elemento successivo a tmp
+            pcbFree_h = pcbFree_h->p_next;
+        }else { pcbFree_h = NULL; } //se è l'ultimo elemento metto la sentinella a null
+
         //Il nuovo primo punta all'ultimo
-        pcbFree_h->p_prev = tmp->p_prev;
+        //pcbFree_h->p_prev = tmp->p_prev;
         //L'ultimo punta al nuovo primo
-        tmp->p_prev->p_next = pcbFree_h;
+        //tmp->p_prev->p_next = pcbFree_h;
         //reset di tmp
         tmp->p_child = NULL;
         tmp->p_next = NULL;
@@ -94,7 +126,6 @@ pcb_t *allocPcb(){
         tmp->p_prev_sib = NULL;
         tmp->p_prnt = NULL;
         tmp->p_semAdd = NULL;
-
         return tmp;
     }
 }
