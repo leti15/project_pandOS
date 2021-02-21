@@ -4,14 +4,21 @@
 /*Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
  * alloca un nuovo SEMD dalla lista di quelli liberi (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna (i.e.
 key e s_procQ). Se non è possibile allocare un nuovo SEMD perché la lista di quelli liberi è vuota, restituisce TRUE. In tutti gli altri casi, restituisce FALSE. */
-int insertBlocked(int *semAdd,pcb_t *p){
+int insertBlocked(int *semAdd, pcb_t *p){
+
     semd_PTR tmp = semd_h;
+
     if (semAdd != NULL && p != NULL){
-        //se la lista dei semafori attivi è vuota
-        if(tmp == NULL){
+
+        if(tmp == NULL){//se la lista dei semafori attivi è vuota
+            printf ("case ASL vuota \n");
+            printf ("alloco primo semd\n");
+
             //alloco il primo semaforo
             semd_PTR newsem = semdFree_h;
+            printf("semdFree %d\n", semdFree_h);
             semdFree_h = semdFree_h->s_next;
+            printf("semdFree %d\n", semdFree_h);
 
             newsem->s_next = NULL;
             newsem->s_procQ = mkEmptyProcQ();
@@ -20,46 +27,56 @@ int insertBlocked(int *semAdd,pcb_t *p){
             //aggiungo il semaforo nella lista dei semafori attivi ASL
             semd_h = newsem;
             p->p_semAdd = semAdd;
+            printf ("inserisco p in semd con insertPQ...\n");
             //inserisco p nel nuovo semaforo
             insertProcQ( &( newsem->s_procQ ), p );
             return 0;
-        }
 
-        //se la lista dei semafori attivi è piena (ovvero lista semafori liberi vuota)
-        else if (semdFree_h == NULL) {
-            return 1;
-        }
+        }else if (semdFree_h == NULL) {//se la lista dei semafori attivi è piena (ovvero lista semafori liberi vuota)
 
-        //se la lista sei semafori attivi contiene almeno un elemento ma non è piena
-        else{
+                printf ("case ASL piena\n");
+                return 1;
 
-            //cerco il semaforo nella lista dei semafori allocati
-            while(tmp != NULL){
+            }else{//se la lista sei semafori attivi contiene almeno un elemento ma non è piena
+                printf ("case ASL non piena\n");
 
-                if( *(tmp->s_semAdd) == *semAdd ){
-                    p->p_semAdd = semAdd;
-                    insertProcQ(&(tmp->s_procQ), p);
-                    return 0;
+                //cerco il semaforo nella lista dei semafori allocati
+                while(tmp != NULL){
+                    if( tmp->s_semAdd == semAdd ){
+                        p->p_semAdd = semAdd;
+                        insertProcQ(&(tmp->s_procQ), p);
+                        return 0;
+                    }
+
+                    tmp = tmp->s_next;
                 }
 
-                tmp = tmp->s_next;
+                printf ("?NOT FOUND\n");
+                //se non ho trovato il semaforo tra i semafori allocati allora aggiungo un semaforo
+                //alloco un nuovo semaforo
+
+                semd_PTR newsem = semdFree_h;
+                printf("semdFree %d\n", semdFree_h);
+                semdFree_h = semdFree_h->s_next;
+                printf("semdFree %d\n", semdFree_h);
+
+                newsem->s_procQ = mkEmptyProcQ();
+                newsem->s_semAdd = semAdd;
+
+                //aggiungo il semaforo nella lista dei semafori attivi ASL
+                newsem->s_next = semd_h;
+                semd_h = newsem;
+
+                //inserisco p nel nuovo semaforo
+                printf ("%d  %d \n", p->p_semAdd, semAdd);
+                p->p_semAdd = semAdd;
+
+                printf ("why???\n");
+                insertProcQ(&(newsem->s_procQ), p);
+
+                return 0;
             }
-            //se non ho trovato il semaforo tra i semafori allocati allora aggiungo un semaforo
-            //alloco un nuovo semaforo
-            semd_PTR newsem = semdFree_h;
-            semdFree_h = semdFree_h->s_next;
 
-            newsem->s_next = semd_h;
-            newsem->s_procQ = mkEmptyProcQ();
-            newsem->s_semAdd = semAdd;
-            //aggiungo il semaforo nella lista dei semafori attivi ASL
-            semd_h = newsem;
-            //inserisco p nel nuovo semaforo
-            p->p_semAdd = semAdd;
-            insertProcQ(&(newsem->s_procQ), p);
-
-            return 0;
-        }
     }else return 0;
 }
 
@@ -86,22 +103,20 @@ pcb_t* removeBlocked(int *semAdd){
             int found = 0;
 
             while(tmp != NULL && found == 0){
-                if(*(tmp->s_semAdd) == *semAdd){ //ho trovato il semaforo
-                    printf("find!!  %d == %d\n", *(tmp->s_semAdd), *semAdd);
+                if(tmp->s_semAdd == semAdd){ //ho trovato il semaforo
                     found = 1;
-                    printf ("%d %d %d\n", tmp, tmp->s_procQ, tmp->s_procQ->p_next);
-                    printf ("%d %d\n",tmp ,tmp->s_procQ);
-                    printf ("%d\n", (tmp->s_procQ->p_next == tmp->s_procQ));
                     if(tmp->s_procQ->p_next == tmp->s_procQ){ // caso in cui c'è un solo elem da rimuovere, sposto codesto semaforo tra quelli liberi
                             printf ("case solo un  elemento\n");
-                            if(old_tmp == NULL){ //se il puntatore al semaforo precedente è null ovvero il samaforo trovato è il primo,  rimuoviamo il semaforo e spostiamo la sentinella
+                            if(old_tmp == NULL){ //se il puntatore al semaforo precedente è null ovvero il semaforo trovato è il primo,  rimuoviamo il semaforo e spostiamo la sentinella
                                 printf ("case primo semd\n");
                                 semd_h = tmp->s_next;
+                                tmp->s_procQ = NULL;
                                 tmp->s_next = semdFree_h;
                                 semdFree_h = tmp;
 
                             }else{
                                 printf ("case non primo semd\n");
+                                tmp->s_procQ = NULL;
                                 old_tmp->s_next = tmp->s_next; //togliamo il semaforo  dalla lista di semafori bloccati (asl)
                                 tmp->s_next = semdFree_h; //aggiungiamo il semaforo alla lista di semafori liberi
                                 semdFree_h = tmp;
@@ -110,9 +125,10 @@ pcb_t* removeBlocked(int *semAdd){
                     printf ("*****************\n");
 
                     elem_toremove = removeProcQ(&(tmp->s_procQ));
-                    printf ("***********111******  %d\n", elem_toremove);
 
-                    outChild(elem_toremove);
+                    printf ("***********111******  %d\n", tmp->s_procQ);
+
+                    //outChild(elem_toremove);
                     printf ("---------------------------\n");
                 }
                 old_tmp = tmp;
@@ -143,7 +159,7 @@ pcb_t* outBlocked(pcb_t *p){
             int found = 0;
 
             while(tmp != NULL && found == 0){ //cerco il semaforo di p nella lista di semafori attivi (ASL)
-                if(*(tmp->s_semAdd) == *(p->p_semAdd))
+                if(tmp->s_semAdd == p->p_semAdd)
                     found = 1;
                 else{
                     old_tmp = tmp;
@@ -181,7 +197,7 @@ pcb_t* headBlocked(int *semAdd){
         semd_PTR tmp = semd_h;
 
         while(tmp != NULL ){
-            if(*(tmp->s_semAdd) == *(semAdd)){
+            if(tmp->s_semAdd == semAdd){
                 /*if(tmp->s_procQ == NULL) {return ERRORE MOOOOOOOOOOOOLTO GRAVE (LETIZIA);}*/
                 return headProcQ( &(tmp->s_procQ) );
             }
@@ -200,17 +216,16 @@ void initASL(){
         semd_table[i].s_semAdd = NULL;
         semd_table[i].s_procQ = NULL;
     }
-    //creo sentinella
+
+    //setto sentinella semafori liberi
     semdFree_h = & semd_table[0];
 
-    for ( i=0; i<MAXPROC ; i++ ) {
-        if(i == 0)//primo semaforo
-            semd_table[i].s_next = & semd_table[i+1];
-
-        else if(i == MAXPROC-1)//ultimo semaforo
-            semd_table[i].s_next = & semd_table[0];
-
-        else
-            semd_table[i].s_next = & semd_table[i+1];
+    //primo semaforo
+    semd_table[0].s_next = & semd_table[1];
+    for ( i=1; i<MAXPROC-1 ; i++ ) {
+        semd_table[i].s_next = & semd_table[i+1];
     }
+    //ultimo semaforo
+    semd_table[MAXPROC-1].s_next = NULL;
+
 }

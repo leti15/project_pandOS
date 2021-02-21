@@ -267,15 +267,73 @@ void main() {
 		if (insertBlocked(&sem[i], procp[i]))
 			printf("insertBlocked(2): unexpected TRUE   ");
 	}
-    printf("!!!!!!!!!!!!!!!!!!!!\n");
+
+	int c=0;
+	semd_PTR tmp = semd_h, tmp2= semdFree_h;
+	printf ("!ASL!\n");
+	while(tmp!=NULL){
+        printf("%d  %d  \n" , c, tmp->s_semAdd);
+        tmp= tmp->s_next;
+        c=c+1;
+	}
+	printf ("!FREE SEMD!\n");
+	c=0;
+	while(tmp2!=NULL){
+        printf("%d  %d \n", c, tmp2->s_semAdd);
+        tmp2= tmp2->s_next;
+        c=c+1;
+	}
+
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
 
-	printf("!!!!!!!!!!!!!!!!!!!!111\n");
+    printf("MAIN RB: semdFree %d\n", semdFree_h);
 
+	tmp = semd_h;
+	tmp2= semdFree_h;
+	c=0;
+	printf ("!ASL!\n");
+	while(tmp!=NULL){
+        printf("%d  %d  \n" , c, tmp->s_semAdd);
+        tmp= tmp->s_next;
+        c=c+1;
+	}
+	printf ("!FREE SEMD!\n");
+	c=0;
+	while(tmp2!=NULL){
+        printf("%d  %d \n", c, tmp2->s_semAdd);
+        tmp2= tmp2->s_next;
+        c=c+1;
+	}
+
+    printf ("insert blocked 1\n");
 
 	if (insertBlocked(&sem[11],p))
 		printf("removeBlocked: fails to return to free list   ");
+
+
+    printf("MAIN: semdFree %d\n", semdFree_h);
+    printf ("insert blocked 2\n");
+
+
+    tmp = semd_h;
+	tmp2= semdFree_h;
+	c=0;
+	printf ("!ASL!\n");
+	while(tmp!=NULL){
+        printf("%d  %d  \n" , c, tmp->s_semAdd);
+        tmp= tmp->s_next;
+        c=c+1;
+	}
+	printf ("!FREE SEMD!\n");
+	c=0;
+	while(tmp2!=NULL){
+        printf("%d  %d \n", c, tmp2->s_semAdd);
+        tmp2= tmp2->s_next;
+        c=c+1;
+	}
+
+    printf("MAIN: semdFree %d\n", semdFree_h);
 
 	if (insertBlocked(&onesem, procp[9]) == FALSE)
 		printf("insertBlocked: inserted more than MAXPROC   ");
