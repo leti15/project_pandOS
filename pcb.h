@@ -1,11 +1,11 @@
-#ifndef PCB_H_INCLUDED
-#define PCB_H_INCLUDED
+#ifndef PCB_H
+#define PCB_H
 
 #include "pandos_const.h"
 #include "pandos_types.h"
 
-pcb_t pcbFree_table[MAXPROC];
-pcb_PTR pcbFree_h;
+static pcb_t pcbFree_table[MAXPROC];
+static pcb_PTR pcbFree_h;
 
 /*Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
  * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/

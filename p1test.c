@@ -19,10 +19,12 @@
 #include "pcb.h"
 #include "asl.h"
 
-#define NULL 0
+#include <stdio.h>
 
 #define MAXPROC	20
 #define	MAXSEM	MAXPROC
+
+#define NULL 0
 
 char okbuf[2048];			/* sequence of progress messages */
 char errbuf[128];			/* contains reason for failing */
@@ -268,75 +270,21 @@ void main() {
 			printf("insertBlocked(2): unexpected TRUE   ");
 	}
 
-	int c=0;
-	semd_PTR tmp = semd_h, tmp2= semdFree_h;
-	printf ("!ASL!\n");
-	while(tmp!=NULL){
-        printf("%d  %d  \n" , c, tmp->s_semAdd);
-        tmp= tmp->s_next;
-        c=c+1;
-	}
-	printf ("!FREE SEMD!\n");
-	c=0;
-	while(tmp2!=NULL){
-        printf("%d  %d \n", c, tmp2->s_semAdd);
-        tmp2= tmp2->s_next;
-        c=c+1;
-	}
-
 	/* check if semaphore descriptors are returned to free list */
 	p = removeBlocked(&sem[11]);
 
-    printf("MAIN RB: semdFree %d\n", semdFree_h);
 
-	tmp = semd_h;
-	tmp2= semdFree_h;
-	c=0;
-	printf ("!ASL!\n");
-	while(tmp!=NULL){
-        printf("%d  %d  \n" , c, tmp->s_semAdd);
-        tmp= tmp->s_next;
-        c=c+1;
-	}
-	printf ("!FREE SEMD!\n");
-	c=0;
-	while(tmp2!=NULL){
-        printf("%d  %d \n", c, tmp2->s_semAdd);
-        tmp2= tmp2->s_next;
-        c=c+1;
-	}
-
-    printf ("insert blocked 1\n");
-
-	if (insertBlocked(&sem[11],p))
+	if (insertBlocked(&sem[11],p)){
 		printf("removeBlocked: fails to return to free list   ");
+		return -1;
+		}
 
 
-    printf("MAIN: semdFree %d\n", semdFree_h);
-    printf ("insert blocked 2\n");
-
-
-    tmp = semd_h;
-	tmp2= semdFree_h;
-	c=0;
-	printf ("!ASL!\n");
-	while(tmp!=NULL){
-        printf("%d  %d  \n" , c, tmp->s_semAdd);
-        tmp= tmp->s_next;
-        c=c+1;
-	}
-	printf ("!FREE SEMD!\n");
-	c=0;
-	while(tmp2!=NULL){
-        printf("%d  %d \n", c, tmp2->s_semAdd);
-        tmp2= tmp2->s_next;
-        c=c+1;
-	}
-
-    printf("MAIN: semdFree %d\n", semdFree_h);
-
-	if (insertBlocked(&onesem, procp[9]) == FALSE)
+	if (insertBlocked(&onesem, procp[9]) == FALSE){
 		printf("insertBlocked: inserted more than MAXPROC   ");
+        return 1;
+    }
+
 
 	printf("removeBlocked test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
@@ -348,8 +296,12 @@ void main() {
 		if (insertBlocked(&sem[i-10], q))
 			printf("insertBlocked(3): unexpected TRUE   ");
 	}
-	if (removeBlocked(&sem[11]) != NULL)
+
+	if (removeBlocked(&sem[11]) != NULL){
 		printf("removeBlocked: removed nonexistent blocked proc   ");
+		return 1;
+		}
+
 	printf("insertBlocked and removeBlocked ok   \n");
 
 	if (headBlocked(&sem[11]) != NULL)

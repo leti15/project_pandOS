@@ -1,12 +1,12 @@
-#ifndef ASL_H_INCLUDED
-#define ASL_H_INCLUDED
+#ifndef ASL_H
+#define ASL_H
 
-#include "pandos_const.h"
-#include "pandos_types.h"
+#include "pcb.h"
+#define NULL 0
 
-semd_t semd_table[MAXPROC];
-semd_PTR semdFree_h;
-semd_PTR semd_h;
+static semd_t semd_table[MAXPROC+2];
+static semd_PTR semdFree_h;
+static semd_PTR semd_h;
 
 /*Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
  * alloca un nuovo SEMD dalla lista di quelli liberi (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna (i.e.

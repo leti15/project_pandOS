@@ -117,26 +117,33 @@ pcb_t* headProcQ(pcb_t** tp){
 all’elemento rimosso dalla lista.*/
 pcb_t* removeProcQ(pcb_t **tp){
 
-    if (tp != NULL){
+    if (tp != NULL)
+    {
         if(*tp == NULL)
+        {
+
             return NULL;
-        else {
+        }
+        else
+        {
             //primo elemento sentinella
             pcb_PTR sent_tp = *tp;
             pcb_PTR elem_toremove = (*tp)->p_next;
-            if(sent_tp->p_next == sent_tp){ //c'è un solo pcb
+            if(sent_tp->p_next == sent_tp || sent_tp->p_prev == sent_tp)
+            { //c'è un solo pcb
 
-                *tp=NULL;
+                (*tp) = NULL;
                 return elem_toremove;
-            }else{
+            }else
+            {
                     elem_toremove=sent_tp->p_next;
                     //ultimo elemento = sent_tp
                     sent_tp->p_next = elem_toremove->p_next; // l'ultimo elemento punterà al secondo
                     elem_toremove->p_next->p_prev = sent_tp; //il prev del secondo punterà all'ultimo
 
                     return elem_toremove;
-                }
             }
+        }
     }else return NULL;
 }
 
@@ -197,9 +204,12 @@ int emptyChild(pcb_t *p){
 }
 
 /*Inserisce il PCB puntato da p come figlio del PCB puntato da prnt.*/
-void insertChild(pcb_t *prnt, pcb_t *p){
-if (prnt != NULL && p != NULL){
-        if(prnt->p_child != NULL){
+void insertChild(pcb_t *prnt, pcb_t *p)
+{
+    if (prnt != NULL && p != NULL)
+    {
+        if(prnt->p_child != NULL)
+        {
 
             //troviamo il ptb esistente che punterà al nuovo ptb
             pcb_PTR last = prnt->p_child->p_prev_sib;
