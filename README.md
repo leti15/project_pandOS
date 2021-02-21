@@ -1,6 +1,12 @@
 ## project_pandOS
-
 In questi file è contenuta l'implementazione del livello 2 di pandOS. Attraverso le funzioni qui descritte possiamo inizializzare le code dei processi o dei semafori e gestirne gli elementi.
+
+## Autori
+-Bassoli Lorenzo
+-Gorini Letizia 
+-Manzano Gerald
+-Pirazzoli Leon 
+
 ## Inizializzazione
 Per prima cosa utilizziamo **InitPcbs()** e **initASL()** per inizializzare le strutture dati contenenti i processi (**"pcbFree_h"**) e i semafori liberi (**"semdFree_h"**).
 
