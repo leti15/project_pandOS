@@ -8,7 +8,7 @@
  ****************************************************************************/
 
 //#include <umps3/umps/types.h>                                                                                 !!!
-#define STATE_GPR_LEN 1 //penso sia definito in "umps3/umps/types.h" quindi temporaneamente le ho dato 1
+//#define STATE_GPR_LEN 1 //penso sia definito in "umps3/umps/types.h" quindi temporaneamente le ho dato 1
 #include "pandos_const.h"
 
 typedef signed int   cpu_t;
