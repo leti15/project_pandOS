@@ -7,7 +7,7 @@
  *
  ****************************************************************************/
 
-//#include <umps3/umps/const.h>                                                                         s!!!!
+#include <umps3/umps/const.h>                                                                         s!!!!
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/

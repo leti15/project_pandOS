@@ -7,22 +7,11 @@
  *
  ****************************************************************************/
 
-//#include <umps3/umps/types.h>                                                                                 !!!
-//#define STATE_GPR_LEN 1 //penso sia definito in "umps3/umps/types.h" quindi temporaneamente le ho dato 1
+#include <umps3/umps/types.h>                                                                                 !!!
 #include "pandos_const.h"
 
 typedef signed int   cpu_t;
 typedef unsigned int memaddr;
-
-typedef struct state {
-     unsigned int entry_hi;
-     unsigned int cause;
-     unsigned int status;
-     unsigned int pc_epc;
-     unsigned int gpr[STATE_GPR_LEN];
-     unsigned int hi;
-     unsigned int lo;
-} state_t;
 
 typedef struct context_t {
     unsigned int c_stackPtr;
