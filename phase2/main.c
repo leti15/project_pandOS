@@ -21,6 +21,9 @@ HIDDEN passupvector_t* PUV;
 
 void fooBar(){};
 extern void test();
+void SYS_handler();
+void trap_handler();
+void interrupt_handler();
 
 int main()
 {
@@ -59,4 +62,91 @@ int main()
     scheduler();
     
     return 0;
+}
+
+void foobar(){
+/** in base al 'cause_register' pg.18 di MPS3 e di preciso al campo 'ExcCode'
+ *  distinguiamo i diversi interrupt
+0 Int = External Device Interrupt
+1 Mod = TLB-Modification Exception
+2 TLBL = TLB Invalid Exception: on a Load instr. or instruction fetch
+3 TLBS = TLB Invalid Exception: on a Store instr.
+4 AdEL = Address Error Exception: on a Load or instruction fetch
+5 AdES = Address Error Exception: on a Store instr.
+6 IBE = Bus Error Exception: on an instruction fetch
+7 DBE = Bus Error Exception: on a Load/Store data access
+8 Sys = Syscall Exception
+9 Bp = Breakpoint Exception
+10 RI = Reserved Instruction Exception
+11 CpU = Coprocessor Unusable Exception
+12 OV = Arithmetic Overflow Exception
+*/
+
+    unsigned int current_causeCode = getCAUSE();
+    int exCode;
+    //in base all' exCode capisco cosa fare
+    if (exCode == 0){
+        //External Device Interrupt
+        interrupt_handler();
+    }else if(exCode >=1 && exCode <= 3){
+        //eccezioni TLB
+        uTLB_RefillHandler();
+    }else if( (exCode > 3 && exCode <= 7) || (exCode > 8 && exCode <= 12) ){
+        //program trap exception handler
+        trap_handler();
+    }else if(exCode == 8){
+        //system calls
+        SYS_handler();
+    }
+}
+
+void SYS_handler(){
+//se si è in kernel mode guardo il registro a0 = gpr[3]
+    if (current_proc->p_s.gpr[3] == 1 ){
+        //create process
+        SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 2 ){
+        //terminate process
+        SYSCALL(TERMPROCESS, 0, 0, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 3 ){
+        //passeren
+        SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 4 ){
+        //verhogen
+        SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 5 ){
+        //wait for IO
+        int intlNo;//numero linea
+        int dnum;//numero device 
+        int termRead;//se = 1 è un terminale in lettura
+        SYSCALL(IOWAIT, intlNo, dnum, termRead);
+
+    }else if (current_proc->p_s.gpr[3] == 6 ){
+        //get CPU time
+        SYSCALL(GETCPUTIME, 0, 0, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 7 ){
+        //wait for clock
+        SYSCALL(WAITCLOCK, 0, 0, 0);
+
+    }else if (current_proc->p_s.gpr[3] == 8 ){
+        //get support data
+        support_t* p_support;
+        p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    }
+}
+
+void trap_handler(){
+
+
+}
+
+void interrupt_handler(){
+
+
+
 }
