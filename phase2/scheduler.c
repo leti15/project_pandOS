@@ -1,20 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "pcb.h"
-#include "asl.h"
-#include "pandos_const.h"
-#include "pandos_types.h"
-#include "p2test.c"
-#define STATE_INIT 0b00011000000000000000000000001100
-#define STATE_WAIT 0b00010000000000000000000000000001
+#include "commons.h"
+#include "scheduler.h"
 
 void scheduler(){
     current_proc = removeProcQ(readyQ);
     //carica 5 millisecondi in PLT
     setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
     LDST(&(current_proc->p_s));
-
+    
     //in base a com'è la readyQ ci comportiamo in modo diverso
     if (emptyProcQ(readyQ) == 1)//se è vuota
     {
