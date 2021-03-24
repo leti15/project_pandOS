@@ -18,27 +18,13 @@ void foobar(){
 11 CpU = Coprocessor Unusable Exception
 12 OV = Arithmetic Overflow Exception
 */
+    //e' in kernel mode con interrupt disabilitati
+    unsigned int* status_reg = (unsigned int*) BIOSDATAPAGE;
+    current_proc->p_s.status = status_reg;
 
-
-/*
- * #define CAUSE_GET_EXCCODE(x)   (((x) & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_BIT)
- * Il valore di E1 << E2 è E1 spostato a sinistra di E2 posizioni di bit. 
- * 
- * I bit vuoti vengono riempiti con zero. Se E1 dispone di un tipo senza segno, 
- * il valore del risultato è E1 × 2^E2, modulo ridotto uno più del valore massimo 
- * rappresentabile nel tipo di risultato. In caso contrario, se E1 ha un tipo con segno 
- * e un valore non negativo e E1 × 2^E2 è rappresentabile nel tipo senza segno 
- * corrispondente del tipo di risultato, tale valore, convertito nel tipo di risultato, 
- * è il valore risultante; in caso contrario, il comportamento non è definito.
- *
- * Il valore di E1 >> E2 è E1 spostato a destra di E2 posizioni di bit.
- * Se E1 ha un tipo senza segno o se E1 ha un tipo con segno e un valore non negativo, 
- * il valore del risultato è la parte integrale del quoziente di E1/2E2. Se E1 dispone di un 
- * tipo signed e di un valore negativo, il valore risultante sarà definito 
- * dall'implementazione
- */
     unsigned int current_causeCode = getCAUSE();
     int exCode = CAUSE_GET_EXCCODE(current_causeCode); 
+
     //in base all' exCode capisco cosa fare
     if (exCode == 0){
         //External Device Interrupt
@@ -64,43 +50,95 @@ void SYS_handler(){
  *  Quando si è in kernel mode guardo il registro a0 = gpr[3] 
  *  per capire quale syscall eseguire
  * */    
-    int current_a0 = current_proc->p_s.gpr[3];
-    if (current_a0 == 1){
-        //create process
-        SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
+    if( STATUSC_GET_MODE(current_proc->p_s.status) == 1) {
+        //il processo va ucciso perchè era in user mode
 
-    }else if (current_a0 == 2){
-        //terminate process
-        SYSCALL(TERMPROCESS, 0, 0, 0);
 
-    }else if (current_a0 == 3){
-        //passeren
-        SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
 
-    }else if (current_a0 == 4){
-        //verhogen
-        SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
+    }else{
+        int current_a0 = current_proc->p_s.gpr[3];
+        if (current_a0 == 1){
+            //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
+            pcb_PTR newProc = allocPcb();
+            if (newProc == NULL){ 
+                //non ci sono pcb liberi= mancanza risorse
+                current_proc->p_s.gpr[1] = -1;
+            }
+            proc_count = proc_count + 1;
+            insertChild(current_proc, newProc);
+            newProc->p_time = 0;
+            newProc->p_supportStruct = current_proc->p_s.gpr[5];
+            state_t* temp = current_proc->p_s.gpr[4];
+            newProc->p_s = *temp;
+            insertProcQ(&readyQ, newProc);
+            current_proc->p_s.gpr[1] = 0;
 
-    }else if (current_a0 == 5){
-        //wait for IO
-        int intlNo = current_proc->p_s.gpr[4];//numero linea
-        int dnum = current_proc->p_s.gpr[5];//numero device 
-        int termRead = current_proc->p_s.gpr[6];//se = 1 è un terminale in lettura
-        SYSCALL(IOWAIT, intlNo, dnum, termRead);
+        }else if (current_a0 == 2){
+            //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
 
-    }else if (current_a0 == 6){
-        //get CPU time
-        SYSCALL(GETCPUTIME, 0, 0, 0);
+            pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati 
+            pcb_PTR temp = current_proc;
+            outChild(current_proc);
+            insertProcQ(&tempQueue, current_proc);
+            //emptyChild == 1 se NON ha figli
 
-    }else if (current_a0 == 7){
-        //wait for clock
-        SYSCALL(WAITCLOCK, 0, 0, 0);
+            while (emptyProcQ(&tempQueue) != 1) //finchè non è vuota continuo 
+            {
+                pcb_PTR to_terminate = removeProcQ(&tempQueue);
 
-    }else if (current_a0 == 8){
-        //get support data
-        support_t* p_support;
-        p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+                while(emptyChild(to_terminate) != 1)
+                {   //se ha figli
+                    pcb_PTR child_toRemove = removeChild(to_terminate);
+                    insertProcQ(&tempQueue, child_toRemove);
+                }
+                //a questo punto 'to_terminate' non avrà più figli e lo posso terminare
+                if (to_terminate->p_semAdd != NULL){ outBlocked(to_terminate);   }
+                outProcQ(&readyQ, to_terminate);
+                freePcb(to_terminate);
+                proc_count = proc_count - 1;
+            }
+
+            //chiamimamo lo scheduler
+            scheduler();
+
+        }else if (current_a0 == 3){
+            //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
+
+
+
+        }else if (current_a0 == 4){
+            //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
+
+
+
+        }else if (current_a0 == 5){
+            //wait for I    SYSCALL(IOWAIT, intlNo, dnum, termRead);
+
+
+
+        }else if (current_a0 == 6){
+            //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
+
+
+
+        }else if (current_a0 == 7){
+            //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
+
+
+
+        }else if (current_a0 == 8){
+            //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+        
+        
+        
+        }  
+
+        //incremento il PC di una word (= 4) in caso sia una delle SYSCALL che non blocca il processo
+        if (current_a0 == 1 ||current_a0 == 2 || current_a0 == 4 || current_a0 == 6 || current_a0 == 8){
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
+        }  
     }
+    
 }
 
 void trap_handler(){

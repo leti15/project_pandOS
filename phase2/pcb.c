@@ -8,7 +8,7 @@ static pcb_PTR pcbFree_h;
  * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/
 void initPcbs(){
     /* pcbFree_table tutti =NULL
-        pcbFree_h sarà Null
+        pcbFree_h sarï¿½ Null
     */
     for (int i=0; i<MAXPROC; i++){
         pcbFree_table[i].p_next = NULL;
@@ -17,9 +17,9 @@ void initPcbs(){
         pcbFree_table[i].p_child = NULL;
         pcbFree_table[i].p_next_sib = NULL;
         pcbFree_table[i].p_prev_sib = NULL;
-        //pcbFree_table[i].p_s = ??;
         pcbFree_table[i].p_time = 0;
         pcbFree_table[i].p_semAdd = NULL;
+        pcbFree_table[i].p_supportStruct = NULL;
     }
 
     //creo sentinella
@@ -37,30 +37,30 @@ void initPcbs(){
 /* inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)*/
 void freePcb(pcb_t *p){
 
-    if (pcbFree_h != NULL){ //se pcbFree_h non è vuota
+    if (pcbFree_h != NULL){ //se pcbFree_h non ï¿½ vuota
         p->p_next = pcbFree_h;
         pcbFree_h = p;
-    } else{ //se è vuota aggiungo p come unico elemento
+    } else{ //se ï¿½ vuota aggiungo p come unico elemento
         p->p_next = NULL;
         pcbFree_h = p;
     }
 
 }
 
-/*Restituisce NULL se la pcbFree_h è vuota. Altrimenti rimuove un elemento dalla pcbFree,
- * inizializza tutti i campi (NULL/0) e restituisce l’elemento rimosso.*/
+/*Restituisce NULL se la pcbFree_h ï¿½ vuota. Altrimenti rimuove un elemento dalla pcbFree,
+ * inizializza tutti i campi (NULL/0) e restituisce lï¿½elemento rimosso.*/
 pcb_t *allocPcb(){
     if (pcbFree_h == NULL)
         return NULL;
     else
     {
-        //tmp è l'elemento estratto dalla coda
+        //tmp ï¿½ l'elemento estratto dalla coda
         pcb_PTR tmp = pcbFree_h;
 
-        if (pcbFree_h->p_next != NULL){//se non è l'ultimo elemento
+        if (pcbFree_h->p_next != NULL){//se non ï¿½ l'ultimo elemento
             //La sentinella punta l'elemento successivo a tmp
             pcbFree_h = pcbFree_h->p_next;
-        }else { pcbFree_h = NULL; } //se è l'ultimo elemento metto la sentinella a null
+        }else { pcbFree_h = NULL; } //se ï¿½ l'ultimo elemento metto la sentinella a null
 
         //reset di tmp
         tmp->p_child = NULL;
@@ -70,6 +70,9 @@ pcb_t *allocPcb(){
         tmp->p_prev_sib = NULL;
         tmp->p_prnt = NULL;
         tmp->p_semAdd = NULL;
+        tmp->p_time = 0;
+        tmp->p_supportStruct = NULL;
+
         return tmp;
     }
 }
@@ -79,7 +82,7 @@ pcb_t* mkEmptyProcQ() {
     return NULL;
 }
 
-/*Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti*/
+/*Restituisce TRUE se la lista puntata da head ï¿½ vuota, FALSE altrimenti*/
 int emptyProcQ(pcb_t* tp) {
     if (tp == NULL)
         return 1;
@@ -87,7 +90,7 @@ int emptyProcQ(pcb_t* tp) {
         return 0;
 }
 
-/*inserisce l’elemento puntato da p nella coda dei processi tp.
+/*inserisce lï¿½elemento puntato da p nella coda dei processi tp.
  * La doppia indirezione su tp serve per poter inserire p come ultimo elemento della coda.*/
 void insertProcQ(pcb_t** tp, pcb_t* p){
     if (tp != NULL && p != NULL){
@@ -107,7 +110,7 @@ void insertProcQ(pcb_t** tp, pcb_t* p){
     }
 }
 
-/*Restituisce l’elemento in fondo alla coda (ultimo immesso) dei processi tp, SENZA RIMUOVERLO.
+/*Restituisce lï¿½elemento in fondo alla coda (ultimo immesso) dei processi tp, SENZA RIMUOVERLO.
 Ritorna NULL se la coda non ha elementi.*/
 pcb_t* headProcQ(pcb_t** tp){
     if (tp != NULL)
@@ -116,8 +119,8 @@ pcb_t* headProcQ(pcb_t** tp){
         return NULL;
 }
 
-/*Rimuove l’elemento piu’ vecchio dalla coda tp. Ritorna NULL se la coda è vuota, altrimenti ritorna il puntatore
-all’elemento rimosso dalla lista.*/
+/*Rimuove lï¿½elemento piuï¿½ vecchio dalla coda tp. Ritorna NULL se la coda ï¿½ vuota, altrimenti ritorna il puntatore
+allï¿½elemento rimosso dalla lista.*/
 pcb_t* removeProcQ(pcb_t **tp){
 
     if (tp != NULL)
@@ -133,7 +136,7 @@ pcb_t* removeProcQ(pcb_t **tp){
             pcb_PTR sent_tp = *tp;
             pcb_PTR elem_toremove = (*tp)->p_next;
             if(sent_tp->p_next == sent_tp || sent_tp->p_prev == sent_tp)
-            { //c'è un solo pcb
+            { //c'ï¿½ un solo pcb
 
                 (*tp) = NULL;
                 return elem_toremove;
@@ -141,8 +144,8 @@ pcb_t* removeProcQ(pcb_t **tp){
             {
                     elem_toremove=sent_tp->p_next;
                     //ultimo elemento = sent_tp
-                    sent_tp->p_next = elem_toremove->p_next; // l'ultimo elemento punterà al secondo
-                    elem_toremove->p_next->p_prev = sent_tp; //il prev del secondo punterà all'ultimo
+                    sent_tp->p_next = elem_toremove->p_next; // l'ultimo elemento punterï¿½ al secondo
+                    elem_toremove->p_next->p_prev = sent_tp; //il prev del secondo punterï¿½ all'ultimo
 
                     return elem_toremove;
             }
@@ -150,7 +153,7 @@ pcb_t* removeProcQ(pcb_t **tp){
     }else return NULL;
 }
 
-/*Rimuove il PCB puntato da p dalla coda dei processi puntata da tp. Se p non è presente nella coda, restituisce NULL (p può trovarsi in una posizione arbitraria della coda).*/
+/*Rimuove il PCB puntato da p dalla coda dei processi puntata da tp. Se p non ï¿½ presente nella coda, restituisce NULL (p puï¿½ trovarsi in una posizione arbitraria della coda).*/
 pcb_t* outProcQ(pcb_t **tp, pcb_t *p) {
     if(tp != NULL && p != NULL){
 
@@ -183,11 +186,11 @@ pcb_t* outProcQ(pcb_t **tp, pcb_t *p) {
                     *tp = NULL;
 
                 }else {
-                    //caso in cui l'elemento è in mezzo ad altri elementi
+                    //caso in cui l'elemento ï¿½ in mezzo ad altri elementi
                     elem_toremove->p_prev->p_next = elem_toremove->p_next;
                     elem_toremove->p_next->p_prev = elem_toremove->p_prev;
 
-                    //se l'elemento da rimuovere è la sentinella ovvero l'ultimo elemento
+                    //se l'elemento da rimuovere ï¿½ la sentinella ovvero l'ultimo elemento
                     if (elem_toremove == sent_tp)
                         *tp = elem_toremove->p_prev;
                 }
@@ -214,7 +217,7 @@ void insertChild(pcb_t *prnt, pcb_t *p)
         if(prnt->p_child != NULL)
         {
 
-            //troviamo il ptb esistente che punterà al nuovo ptb
+            //troviamo il ptb esistente che punterï¿½ al nuovo ptb
             pcb_PTR last = prnt->p_child->p_prev_sib;
 
             //l'ultimo figlio punta al nuovo figlio
@@ -271,11 +274,11 @@ pcb_t* removeChild(pcb_t *p){
 }
 
 /*Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB puntato da p non ha un padre, restituisce NULL,
-altrimenti restituisce l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi in una posizione arbitraria (ossia non è
+altrimenti restituisce lï¿½elemento rimosso (cioï¿½ p). A differenza della removeChild, p puï¿½ trovarsi in una posizione arbitraria (ossia non ï¿½
 necessariamente il primo figlio del padre).*/
 pcb_t *outChild(pcb_t* p){
     if (p != NULL){
-        if(p->p_prnt == NULL || p->p_prnt->p_child == p){//se p non ha un padre oppure se p è l'unico figlio oppure è il primo figlio
+        if(p->p_prnt == NULL || p->p_prnt->p_child == p){//se p non ha un padre oppure se p ï¿½ l'unico figlio oppure ï¿½ il primo figlio
             return removeChild(p->p_prnt);
 
         }else{
