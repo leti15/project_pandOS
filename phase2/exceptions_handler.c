@@ -73,7 +73,7 @@ void SYS_handler(){
             insertProcQ(&readyQ, newProc);
             current_proc->p_s.gpr[1] = 0;
 
-        }else if (current_a0 == 2){
+       }else if (current_a0 == 2){
             //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
 
             pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati 
@@ -103,18 +103,33 @@ void SYS_handler(){
 
         }else if (current_a0 == 3){
             //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
-
+            int* temp = current_proc->p_s.gpr[4];
+            *temp = *temp - 1;
+            if (*temp < 0) {
+                insertBlocked(temp, current_proc);
+                scheduler();
+                
+            }          
 
 
         }else if (current_a0 == 4){
             //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
-
-
+            int* temp = current_proc->p_s.gpr[4];
+            *temp = *temp + 1;
+            //controllare se dobbiamo risvegliare il processo o no
 
         }else if (current_a0 == 5){
             //wait for I    SYSCALL(IOWAIT, intlNo, dnum, termRead);
-
-
+            /**
+             * 0-7: DEVICE LINEA 3
+             * 8-15:DEVICE LINEA 4
+             * 16-23: DEVICE LINEA 5
+             * 24-31: DEVICE LINEA 6
+             * 32-47: DEVICE LINEA 7 (TERMINALI)
+             * 48: DEVICE INTERVAL TIMER
+             * 49: DEVICE PLT
+            */
+            //ALLOCARE SEMD QUANDO RICHIESTO POI USARE INSERTBLOCKED()
 
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);

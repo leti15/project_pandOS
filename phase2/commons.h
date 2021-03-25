@@ -1,8 +1,6 @@
 #ifndef COMMONS_H
 #define COMMONS_H
 
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "pcb.h"
 #include "asl.h"
