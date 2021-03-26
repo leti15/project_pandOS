@@ -19,8 +19,8 @@ void foobar(){
 12 OV = Arithmetic Overflow Exception
 */
     //e' in kernel mode con interrupt disabilitati
-    unsigned int* status_reg = (unsigned int*) BIOSDATAPAGE;
-    current_proc->p_s.status = status_reg;
+    state_t* state_reg = BIOSDATAPAGE;
+    current_proc->p_s = state_reg;
 
     unsigned int current_causeCode = getCAUSE();
     int exCode = CAUSE_GET_EXCCODE(current_causeCode); 
@@ -58,7 +58,7 @@ void SYS_handler(){
         int current_a0 = current_proc->p_s.gpr[3];
         if (current_a0 == 1){
             //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
-            if (current_proc->p_s.gpr[4] == NULL || current_proc->p_s.gpr[5] == NULL){ return NULL; }
+            if (current_proc->p_s.gpr[4] == NULL){ SYSCALL(TERMPROCESS, 0, 0, 0); } 
             
             pcb_PTR newProc = allocPcb();
             if (newProc == NULL){ 
@@ -73,6 +73,8 @@ void SYS_handler(){
             newProc->p_s = *temp;
             insertProcQ(&readyQ, newProc);
             current_proc->p_s.gpr[1] = 0;
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
 
        }else if (current_a0 == 2){
             //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
@@ -97,27 +99,33 @@ void SYS_handler(){
                 freePcb(to_terminate);
                 proc_count = proc_count - 1;
             }
-
             //chiamimamo lo scheduler
             scheduler();
 
         }else if (current_a0 == 3){
             //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
-            if (current_proc->p_s.gpr[4] == NULL){ return NULL; }
+            if (current_proc->p_s.gpr[4] == NULL){ SYSCALL(TERMPROCESS, 0, 0, 0); }
             
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp - 1;
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
             if (*temp < 0) {
+                //INCREMENTIAMO IL PC 
+                unsigned int tmp = STCK(tmp);
+                current_proc->p_time = current_proc->p_time + tmp;
                 insertBlocked(temp, current_proc);
                 scheduler();
             }          
 
         }else if (current_a0 == 4){
             //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
-            if (current_proc->p_s.gpr[4] == NULL){ return NULL; }
+            if (current_proc->p_s.gpr[4] == NULL){ SYSCALL(TERMPROCESS, 0, 0, 0); }
             
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp + 1;
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
             //controllare se dobbiamo risvegliare il processo o no
 
         }else if (current_a0 == 5){
@@ -143,7 +151,7 @@ void SYS_handler(){
             int dnum = current_proc->p_s.gpr[5];
             int dev_pos = (intlNo - 3)*8 + dnum;
 
-            if (current_proc->p_s.gpr[5] == 1){
+            if (current_proc->p_s.gpr[6] == 1){
                 //terminale in lettura
                 dev_pos = dev_pos + 8;
             }
@@ -158,28 +166,33 @@ void SYS_handler(){
             }
             
             //faccio P operation sul semaforo
-            SYSCALL(PASSEREN, device[dev_pos], 0, 0);
+            SYSCALL(PASSEREN, device[dev_pos]->s_semAdd, 0, 0);
 
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
-    
-
+            unsigned int tmp = STCK(tmp);
+            current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
+            
 
         }else if (current_a0 == 7){
             //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
-
+  
+            if  (device[48] == NULL){
+                //non c'è ancora nessun semaforo per quel device
+                semd_PTR newsem = allocSemd();
+                device[48] = newsem;
+            }
+            
+            //faccio P operation sul semaforo
+            SYSCALL(PASSEREN, device[48]->s_semAdd, 0, 0);
 
 
         }else if (current_a0 == 8){
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
-        
-        
-        
-        }  
-
-        //incremento il PC di una word (= 4) in caso sia una delle SYSCALL che non blocca il processo
-        if (current_a0 == 1 ||current_a0 == 2 || current_a0 == 4 || current_a0 == 6 || current_a0 == 8){
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
+            return current_proc->p_supportStruct;
         }  
     }
     
@@ -191,9 +204,32 @@ void trap_handler(){
 }
 
 void interrupt_handler(){
+    /**
+    INT C=0 , i;
+    
+    WHILE (C == 0 && i < 8):
+        IF VETTORE[i]==1 THEN:
+            C = i;
+        ENDIF
+    ENDFOR
+
+    SWITCH C
+        CASE C=0
+            "Restituire controllo a current_proc"
+        CASE 3<=C<=7
+            DEVICE_INTERRUPT_HANDLER();
+            interrupt_handler();
+        CASE C=1
+            PLT_INTERRUPT_HANDLER();
+            interrupt_handler();
+        CASE C=2
+            IT_INTERRUPT_HANDLER();
+            interrupt_handler();
+    ENDSWITCH
 
 
-
+    */
+   
 }
 
 void init_devices() {
