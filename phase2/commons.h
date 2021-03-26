@@ -26,6 +26,9 @@
 #define STATUSC_MODE_BIT 1
 #define STATUSC_GET_MODE(x)   (((x) & STATUSC_MODE_MASK) >> STATUSC_MODE_BIT)
 
+//macro to find if a device is installed or not
+#define DEVICE_CHECK (x, y, z)     ((x & y) >> z)
+
 int proc_count;
 HIDDEN int softB_count;
 HIDDEN pcb_PTR readyQ;
@@ -33,6 +36,18 @@ HIDDEN pcb_PTR current_proc;
 HIDDEN passupvector_t PassUpVector [16];
 HIDDEN passupvector_t* PUV;
 /** puntatore alla coda dei semafori attivi 'semd_h' */
+
+//device semaphores
+/**
+ * 0-7: DEVICE LINEA 3
+ * 8-15:DEVICE LINEA 4
+ * 16-23: DEVICE LINEA 5
+ * 24-31: DEVICE LINEA 6
+ * 32-47: DEVICE LINEA 7 (TERMINALI)
+ * 48: DEVICE INTERVAL TIMER
+ * 49: DEVICE PLT
+*/
+HIDDEN semd_t* device[50]; 
 
 
 #endif /* !defined(COMMONS_H) */

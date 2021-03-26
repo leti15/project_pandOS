@@ -7,18 +7,29 @@ static semd_PTR semdFree_h;
 static semd_PTR semd_h;
 
 semd_PTR allocSemd() {
-    if (semd_h == NULL) {
-        semd_h = semdFree_h;
-        semdFree_h = semdFree_h->s_next;
-        return semd_h;
-    }
-    else {
-        if (semdFree_h == NULL) {
-            return NULL;
+    if (semdFree_h == NULL){return NULL;} // se non ci sono più semafori allocabili return NULL
+    
+    int allocated = 0;
+    semd_PTR newsemd = semdFree_h;
+    semdFree_h = semdFree_h->s_next;
+
+    //inizializzo campi newsemd
+    newsemd->s_semAdd = (int*) 1; //setto una sola risorsa 
+    newsemd->s_procQ = mkEmptyProcQ();
+
+    //trovo dove metterlo nella ASL, dove mettere un semd da 1 risorsa
+    semd_PTR temp = semd_h;
+    while (temp->s_semAdd != (int*)MAXINT && allocated == 0){
+        if (temp->s_next->s_semAdd > 1 || temp->s_next->s_semAdd == (*int) MAXINT){
+            newsemd->s_next = temp->s_next;
+            temp->s_next = newsemd;
+            allocated = 1;
         }
-        semd_PTR newsemd = semdFree_h;
-        
+        temp = temp->s_next;
     }
+    //esce quando il semaforo è stato allocato 
+
+    return newsemd;
 }
 
 /*Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
@@ -181,27 +192,27 @@ void initASL()
     for ( i=0 ; i<MAXPROC+2; i++ ){
         semd_table[i].s_next = NULL;
         semd_table[i].s_semAdd = NULL;
-        semd_table[i].s_procQ = NULL;
+        semd_table[i].s_procQ = mkEmptyProcQ();
     }
 
     //setto sentinella semafori liberi
     semdFree_h = & semd_table[1];
 
-    //primo semaforo
-    semd_table[1].s_next = & semd_table[2];
+    semd_table[1].s_next = & semd_table[2]; //primo semaforo
+
     for ( i=2; i<MAXPROC+1 ; i++ ) {
         semd_table[i].s_next = & semd_table[i+1];
     }
-    //ultimo semaforo
-    semd_table[MAXPROC].s_next = NULL;
-    semdFree_h = &semd_table[1];
+    
+    semd_table[MAXPROC].s_next = NULL; //ultimo semaforo
+    semdFree_h = &semd_table[1]; //lista semafori liberi
 
-    // Nodo ad inizio lista
+    // Nodo ad inizio lista ASL
     semd_h = &semd_table[0];
-    semd_h->s_semAdd = ( int*)0;
+    semd_h->s_semAdd = (int*)0;
     semd_h->s_procQ = NULL;
 
-    // Nodo a fine lista
+    // Nodo a fine lista ASL
     semd_h->s_next = &semd_table[MAXPROC +1];
     semd_h->s_next->s_semAdd = ( int*)MAXINT;
     semd_h->s_next->s_procQ = NULL;

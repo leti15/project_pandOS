@@ -52,13 +52,14 @@ void SYS_handler(){
  * */    
     if( STATUSC_GET_MODE(current_proc->p_s.status) == 1) {
         //il processo va ucciso perchè era in user mode
-
-
+        SYSCALL(TERMPROCESS, 0, 0, 0);
 
     }else{
         int current_a0 = current_proc->p_s.gpr[3];
         if (current_a0 == 1){
             //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
+            if (current_proc->p_s.gpr[4] == NULL || current_proc->p_s.gpr[5] == NULL){ return NULL; }
+            
             pcb_PTR newProc = allocPcb();
             if (newProc == NULL){ 
                 //non ci sono pcb liberi= mancanza risorse
@@ -75,7 +76,6 @@ void SYS_handler(){
 
        }else if (current_a0 == 2){
             //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
-
             pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati 
             pcb_PTR temp = current_proc;
             outChild(current_proc);
@@ -103,37 +103,66 @@ void SYS_handler(){
 
         }else if (current_a0 == 3){
             //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
+            if (current_proc->p_s.gpr[4] == NULL){ return NULL; }
+            
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp - 1;
             if (*temp < 0) {
                 insertBlocked(temp, current_proc);
                 scheduler();
-                
             }          
-
 
         }else if (current_a0 == 4){
             //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
+            if (current_proc->p_s.gpr[4] == NULL){ return NULL; }
+            
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp + 1;
             //controllare se dobbiamo risvegliare il processo o no
 
         }else if (current_a0 == 5){
-            //wait for I    SYSCALL(IOWAIT, intlNo, dnum, termRead);
+            //wait for IO    SYSCALL(IOWAIT, intlNo, dnum, termRead);
+            if (current_proc->p_s.gpr[4] == NULL || current_proc->p_s.gpr[5] == NULL || current_proc->p_s.gpr[6] == NULL){ return NULL; }
+            
             /**
              * 0-7: DEVICE LINEA 3
              * 8-15:DEVICE LINEA 4
              * 16-23: DEVICE LINEA 5
              * 24-31: DEVICE LINEA 6
              * 32-47: DEVICE LINEA 7 (TERMINALI)
+             *      32-39: TERMINALI IN SCRITTURA
+             *      40-47: TERMINALI IN LETTURA
              * 48: DEVICE INTERVAL TIMER
              * 49: DEVICE PLT
+             * 
             */
             //ALLOCARE SEMD QUANDO RICHIESTO POI USARE INSERTBLOCKED()
+            // se non trovo il corrispettivo semaforo nell'array DEVICES[] lo creo
+
+            int intlNo = current_proc->p_s.gpr[4];
+            int dnum = current_proc->p_s.gpr[5];
+            int dev_pos = (intlNo - 3)*8 + dnum;
+
+            if (current_proc->p_s.gpr[5] == 1){
+                //terminale in lettura
+                dev_pos = dev_pos + 8;
+            }
+
+            if  (device[dev_pos] == NULL){
+                //non c'è ancora nessun semaforo per quel device
+                if (check_dev_installation(intlNo, dnum) == 1){
+                    //se il device è installato lo creo
+                    semd_PTR newsem = allocSemd();
+                    device[dev_pos] = newsem; //lo salvo nell'array di semafori dei device
+                }else{  return NULL;  }//device non installato --> errore!
+            }
+            
+            //faccio P operation sul semaforo
+            SYSCALL(PASSEREN, device[dev_pos], 0, 0);
 
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
-
+    
 
 
         }else if (current_a0 == 7){
@@ -165,4 +194,43 @@ void interrupt_handler(){
 
 
 
+}
+
+void init_devices() {
+    for (int i = 0; i < 50; i = i + 1) { device[i] = NULL; }
+}
+
+int check_dev_installation( int numLine, int numDev){
+
+    unsigned int x, mask; 
+    unsigned int* base_line = 0x1000002C;
+    if (numLine == 4){ base_line = base_line + 0x04;}
+    if (numLine == 5){ base_line = base_line + 0x08;}
+    if (numLine == 6){ base_line = base_line + 0x0C;}
+    if (numLine == 7){ base_line = base_line + 0X10;}
+    x = *base_line;
+    mask = power(2, numDev);
+    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
+    else { return FALSE; }
+}
+
+int check_dev_interruption( int numLine, int numDev){
+
+    unsigned int x, mask; 
+    unsigned int* base_line = 0x10000040;
+    if (numLine == 4){ base_line = base_line + 0x04;}
+    if (numLine == 5){ base_line = base_line + 0x08;}
+    if (numLine == 6){ base_line = base_line + 0x0C;}
+    if (numLine == 7){ base_line = base_line + 0X10;}
+    x = *base_line;
+    mask = power(2, numDev);
+    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
+    else { return FALSE; }
+}
+
+
+int power(int base, int exp){
+    int s=1;
+    for (int i=0; i< exp; i = i+1){ s = s*base; }
+    return s;
 }
