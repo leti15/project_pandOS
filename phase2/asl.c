@@ -15,7 +15,7 @@ semd_PTR allocSemd() {
     semdFree_h = semdFree_h->s_next;
 
     //inizializzo campi newsemd
-    newsemd->s_semAdd = (int*) 1; //setto una sola risorsa 
+    newsemd->s_semAdd = (int*) 0; //setto una sola risorsa 
     newsemd->s_procQ = mkEmptyProcQ();
 
     //trovo dove metterlo nella ASL, dove mettere un semd da 1 risorsa

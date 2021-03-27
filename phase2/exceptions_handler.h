@@ -6,6 +6,6 @@
 void fooBar();
 void SYS_handler();
 void trap_handler();
-void interrupt_handler(unsigned int current_causeCode, int exCode);
+int interrupt_handler();
 
 #endif /* !defined(EXCEPTIONS_HANDLER_H) */

@@ -2,13 +2,15 @@
 
 void remove_from_arrayDev( int* semAdd){
     for (int i = 0; i < DEVARRSIZE; i = i+1){
-        if (device[i]->s_semAdd == semAdd)
+        if (device[i]->s_semAdd == semAdd){
             device[i] = NULL;
+            break;
+        }
     }
 }
 
 void init_devices() {
-    for (int i = 0; i < 50; i = i + 1) { device[i] = NULL; }
+    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = NULL; }
 }
 
 int check_dev_installation( int numLine, int numDev){
@@ -45,4 +47,13 @@ int check_dev_interruption( int numLine, int numDev){
 
     if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
     else { return FALSE; }
+}
+
+int check_dev_semAdd(int* semAdd){
+    for (int i=0; i<DEVARRSIZE; i = i+1){
+        if (device[i]->s_semAdd == semAdd){
+            return TRUE;
+        }
+    }
+    return FALSE;
 }

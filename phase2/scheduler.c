@@ -2,9 +2,7 @@
 #include "scheduler.h"
 
 void scheduler()
-{   //inseriamo in fondo alla ready queue il processo corrente
-    insertProcQ(&readyQ, current_proc); 
-
+{    
     //in base a com'è la readyQ ci comportiamo in modo diverso
     if (emptyProcQ(readyQ) == 1)//se è vuota
     {

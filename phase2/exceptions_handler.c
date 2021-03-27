@@ -2,10 +2,7 @@
 #include "exceptions_handler.h"
 
 /** TODO: 
- *  --sistemare terminae process leggendo pg. 38 del pdf (cap 3.9)
-            ->sistemare anche il soft blocked
  *  --implementa "PassUpOrDie"
- *  --sistemare V
 */
 
 void foobar(){
@@ -35,7 +32,7 @@ void foobar(){
     //in base all' exCode capisco cosa fare
     if (exCode == 0){
         //External Device Interrupt
-        interrupt_handler(current_causeCode, exCode);
+        interrupt_handler();
     }else if(exCode >=1 && exCode <= 3){
         //eccezioni TLB
         uTLB_RefillHandler();
@@ -101,16 +98,21 @@ void SYS_handler(){
                     pcb_PTR child_toRemove = removeChild(to_terminate);
                     insertProcQ(&tempQueue, child_toRemove);
                 }
+
+                int bool_dev_sem;
                 //a questo punto 'to_terminate' non avrà più figli e lo posso terminare
-                if (to_terminate->p_semAdd != NULL){ outBlocked(to_terminate);   }
+                if (to_terminate->p_semAdd != NULL){ 
+                    bool_dev_sem = check_dev_semAdd(to_terminate->p_semAdd);
+                    if (!bool_dev_sem && outBlocked(to_terminate) != NULL){   
+                        //aggiusta semaforo relativo
+                        *(to_terminate->p_semAdd) = *(to_terminate->p_semAdd) + 1;
+                    }
+                }
                 outProcQ(&readyQ, to_terminate);
                 freePcb(to_terminate);
-
-
-
-                /*  controllare se era un pcb bloccato ad un semaforo di un device, 
-                 *  in quel caso va decrementato anche 'softBlocked'  */
                 proc_count = proc_count - 1;
+                if(bool_dev_sem){ softB_count = softB_count - 1;}
+                
             }
             //chiamimamo lo scheduler
             scheduler();
@@ -125,12 +127,12 @@ void SYS_handler(){
             //INCREMENTIAMO IL PC 
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
-            if (*temp < 0) {
+            if (*temp == -1 || temp == device[48]){
                 //INCREMENTIAMO IL CPU TIME 
                 unsigned int tmp = STCK(tmp);
                 current_proc->p_time = current_proc->p_time + tmp;
 
-                insertBlocked(temp, current_proc);
+                if(insertBlocked(temp, current_proc) == TRUE){ PANIC(); }
                 scheduler();
             }          
 
@@ -141,6 +143,19 @@ void SYS_handler(){
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp + 1;
 
+            if(*temp - 1 < 0){
+                //se ora c'è una risorsa disponibile
+                pcb_PTR newpcb = removeBlocked(temp);
+                insertProcQ(&readyQ, newpcb);
+
+                //se era un semaforo dei device devo diminuire soft blocked
+                for(int i=0; i<DEVARRSIZE; i = i+1){
+                    if (temp == device[i]->s_semAdd){ 
+                        softB_count = softB_count - 1; 
+                        break;
+                    }
+                }
+            }
             //INCREMENTIAMO IL PC 
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
@@ -157,7 +172,6 @@ void SYS_handler(){
              *      32-39: TERMINALI IN SCRITTURA
              *      40-47: TERMINALI IN LETTURA
              * 48: DEVICE INTERVAL TIMER
-             * 49: DEVICE PLT
              * 
             */
             //ALLOCARE SEMD QUANDO RICHIESTO POI USARE INSERTBLOCKED()
@@ -209,7 +223,6 @@ void SYS_handler(){
             //faccio P operation sul semaforo
             SYSCALL(PASSEREN, device[48]->s_semAdd, 0, 0);
 
-
         }else if (current_a0 == 8){
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
@@ -232,7 +245,7 @@ void trap_handler(){
 
 }
 
-void interrupt_handler(unsigned int current_causeCode, int exCode){
+int interrupt_handler(){
     /**
     INT C=0 , i;
     
@@ -256,82 +269,113 @@ void interrupt_handler(unsigned int current_causeCode, int exCode){
             interrupt_handler();
     ENDSWITCH
     */
-   
+
+    unsigned int current_causeCode = getCAUSE();
     int numLine = -1;
     unsigned int IP = 0, mask = 0b00000000000000001111111100000000;
     IP = MASKySHIFTz(current_causeCode, mask, 9);
     //qui IP = 0b0000000000000000xxxxxxx (andiamo ad analizzare gli x)
 
-    if(IP == 0){ return; } //non ci sono più interrupt pendenti, si può uscire dall'handler
+    if(IP == 0){ return TRUE; } //non ci sono più interrupt pendenti, si può uscire dall'handler
 
-    if (IP % 2 == 0){
+    if (IP % 2 != 0){
         //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
         //PLT interrupt handler
         numLine = 1;
-    }
+        //carica 5 millisecondi in PLT
+        setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
+        state_t* state_reg = BIOSDATAPAGE;
+        current_proc->p_s = *state_reg;
+        insertProcQ(&readyQ, current_proc);
+        scheduler();
 
-    IP = IP >> 1;
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
-        //INTERVAL TIMER interrupt handler
-        numLine = 2;
-    }
+    }else{
 
-    IP = IP >> 1;
-    if (IP != 0) {
-        //ci sono device interrupts
-        for (int i = 3; i<8; i= i+1){
-            if (IP%2 != 0){
-                numLine = i;
-                break; //appena trova una lina con interrupt esce
+        IP = IP >> 1;
+        if (IP % 2 != 0){
+            //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
+            //INTERVAL TIMER interrupt handler
+            numLine = 2;
+            LDIT(100000);  // setto interval timer di 100 millisecondi (=100000 microsecondi)
+            
+            while (emptyProcQ(device[48]->s_procQ) != 1){
+                //finchè non ho svuotato la coda dei processi bloccati all' interval timer
+                *(device[48]->s_semAdd) = *(device[48]->s_semAdd)  + 1;
+                if(*(device[48]->s_semAdd)  - 1 < 0){
+                    //se ora c'è una risorsa disponibile
+                    pcb_PTR newpcb = removeBlocked(device[48]->s_semAdd);
+                    insertProcQ(&readyQ, newpcb);
+                    //diminuisco soft blocked
+                    softB_count = softB_count - 1; 
+                            
+                }
             }
+
+            //ripristino le risorse del semaforo
+            if(*(device[48]->s_semAdd) == 0){ return TRUE;}
+            else{
+                *(device[48]->s_semAdd) = 0;
+                return FALSE;
+            }
+
+            LDST((state_t*) BIOSDATAPAGE);
+
+        }else{
+
             IP = IP >> 1;
+            if (IP != 0) {
+                //ci sono device interrupts
+                for (int i = 3; i<8; i= i+1){
+                    if (IP%2 != 0){
+                        numLine = i;
+                        break; //appena trova una lina con interrupt esce
+                    }
+                    IP = IP >> 1;
+                }
+
+                //gestione device interrupt 
+                /**1. calculate device register
+                *  2. save 'status code' from the device register (salviamo l'intero registro?)
+                *  3. write che 'command code' on the register (di ack o no)
+                *  4. perform V operation, unblock che process
+                *  5. place the saved 'status code' on the unblocked pcb's reg_v0
+                *  6. put che unblocked pcb un the ready queue
+                *  7. return control to the current process, perform a LDST on the 
+                *     saved exception state at BIOSDATAPAGE
+                */
+                
+                int numDev = 0;
+                while (check_dev_interruption(numLine, numDev) == FALSE){ numDev = numDev+1;}
+                
+                unsigned int mask, device_status, base_device_reg;
+                base_device_reg = GET_devAddrBase(numLine, numDev);//troviamo la base del device register
+                device_status = base_device_reg;//troviamo lo status del device
+                
+                //setto campo COMMAND del device register
+                *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0x04) = ACK;
+
+                //faccio operazione V
+                int* temp = device[(numLine - 3)*8 + numDev]->s_semAdd;
+                *temp = *temp + 1;
+                pcb_PTR newpcb;
+
+                if(*temp - 1 < 0){
+                    //se ora c'è una risorsa disponibile
+                    newpcb = removeBlocked(temp);
+                    if(newpcb == NULL){ return FALSE; }
+                    newpcb->p_s.gpr[1] = device_status;
+                    insertProcQ(&readyQ, newpcb);
+
+                    //siccome era un semaforo dei device devo diminuire soft blocked
+                    softB_count = softB_count - 1; 
+                }
+
+                //return control to current process
+                LDST((state_t*) BIOSDATAPAGE);
+
+            }
         }
-
-        //gestione device interrupt 
-        /** 1. calculate device egster
-         *  2. save 'status code' from the device register (salviamo l'intero registro?)
-         *  3. write che 'command code' on the register (di ack o no)
-         *  4. perform V operation, unblock che process
-         *  5. place the saved 'status code' on the unblocked pcb's reg_v0
-         *  6. put che unblocked pcb un the ready queue
-         *  7. return control to the current process, perform a LDST on the 
-         *     saved exception state at BIOSDATAPAGE
-        */
-
     }
-
-/*
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  3
-        //DISK DEVICES interrupt handler
-    }
-
-    IP = IP >> 1;
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  4
-        //FLASH DEVICES interrupt handler
-    }
-
-    IP = IP >> 1;
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  5
-        //NETWORK DEVICES interrupt handler
-    }
-
-    IP = IP >> 1;
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  6
-        //PRINTER DEVICES interrupt handler
-    }
-
-    IP = IP >> 1;
-    if (IP % 2 == 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  7
-        //TERMINAL DEVICES interrupt handler
-    }
-*/
-
-
+    interrupt_handler();
 }
 

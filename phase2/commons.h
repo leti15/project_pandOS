@@ -31,7 +31,7 @@
 #define MASKySHIFTz(x, y, z)    (((x) & y) >> z)
 
 //prende in input il numero della line a e del device, torna l'indirizzo del device register
-#define GET_devAddrBase(LINE, DEV)  (0x1000.0054 + ((LINE - 3) * 0x80) + (DEV * 0x10))
+#define GET_devAddrBase(LINE, DEV)  (0x10000054 + ((LINE - 3) * 0x80) + (DEV * 0x10))
 
 extern int proc_count;
 extern int softB_count;
@@ -56,5 +56,6 @@ void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
+int check_dev_semAdd(int* semAdd);
 
 #endif /* !defined(COMMONS_H) */
