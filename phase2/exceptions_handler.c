@@ -1,6 +1,13 @@
 #include "commons.h"
 #include "exceptions_handler.h"
 
+/** TODO: 
+ *  --sistemare terminae process leggendo pg. 38 del pdf (cap 3.9)
+            ->sistemare anche il soft blocked
+ *  --implementa "PassUpOrDie"
+ *  --sistemare V
+*/
+
 void foobar(){
 /** in base al 'cause_register' pg.18 di MPS3 e di preciso al campo 'ExcCode'
  *  distinguiamo i diversi interrupt
@@ -18,9 +25,9 @@ void foobar(){
 11 CpU = Coprocessor Unusable Exception
 12 OV = Arithmetic Overflow Exception
 */
-    //e' in kernel mode con interrupt disabilitati
+    //e' in kernel mode con interrupt disabilitati    
     state_t* state_reg = BIOSDATAPAGE;
-    current_proc->p_s = state_reg;
+    current_proc->p_s = *state_reg;
 
     unsigned int current_causeCode = getCAUSE();
     int exCode = CAUSE_GET_EXCCODE(current_causeCode); 
@@ -28,7 +35,7 @@ void foobar(){
     //in base all' exCode capisco cosa fare
     if (exCode == 0){
         //External Device Interrupt
-        interrupt_handler();
+        interrupt_handler(current_causeCode, exCode);
     }else if(exCode >=1 && exCode <= 3){
         //eccezioni TLB
         uTLB_RefillHandler();
@@ -73,8 +80,9 @@ void SYS_handler(){
             newProc->p_s = *temp;
             insertProcQ(&readyQ, newProc);
             current_proc->p_s.gpr[1] = 0;
+
             //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
        }else if (current_a0 == 2){
             //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
@@ -97,6 +105,11 @@ void SYS_handler(){
                 if (to_terminate->p_semAdd != NULL){ outBlocked(to_terminate);   }
                 outProcQ(&readyQ, to_terminate);
                 freePcb(to_terminate);
+
+
+
+                /*  controllare se era un pcb bloccato ad un semaforo di un device, 
+                 *  in quel caso va decrementato anche 'softBlocked'  */
                 proc_count = proc_count - 1;
             }
             //chiamimamo lo scheduler
@@ -108,12 +121,15 @@ void SYS_handler(){
             
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp - 1;
+
             //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
+
             if (*temp < 0) {
-                //INCREMENTIAMO IL PC 
+                //INCREMENTIAMO IL CPU TIME 
                 unsigned int tmp = STCK(tmp);
                 current_proc->p_time = current_proc->p_time + tmp;
+
                 insertBlocked(temp, current_proc);
                 scheduler();
             }          
@@ -124,9 +140,9 @@ void SYS_handler(){
             
             int* temp = current_proc->p_s.gpr[4];
             *temp = *temp + 1;
+
             //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
-            //controllare se dobbiamo risvegliare il processo o no
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
         }else if (current_a0 == 5){
             //wait for IO    SYSCALL(IOWAIT, intlNo, dnum, termRead);
@@ -168,14 +184,19 @@ void SYS_handler(){
             //faccio P operation sul semaforo
             SYSCALL(PASSEREN, device[dev_pos]->s_semAdd, 0, 0);
 
+            //va fatto altro.................................!!!!!!!!!
+
+
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
+
+            //AGGIORNIAMO CPUT TIME
             unsigned int tmp = STCK(tmp);
             current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
-            //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
-            
 
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
+    
         }else if (current_a0 == 7){
             //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
   
@@ -191,9 +212,17 @@ void SYS_handler(){
 
         }else if (current_a0 == 8){
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+
+            //INCREMENTIAMO IL PC
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
-            return current_proc->p_supportStruct;
-        }  
+
+            current_proc->p_s.gpr[1] = current_proc->p_supportStruct;
+        }else{
+            //wrong sys call number (reg_a0 >= 9)
+            /**dobbiamo eseguire un'operazione "pass up or die" 
+             * usando il valore dell'indice ' GENERALEXCEPT '
+             */
+        }
     }
     
 }
@@ -203,7 +232,7 @@ void trap_handler(){
 
 }
 
-void interrupt_handler(){
+void interrupt_handler(unsigned int current_causeCode, int exCode){
     /**
     INT C=0 , i;
     
@@ -226,47 +255,83 @@ void interrupt_handler(){
             IT_INTERRUPT_HANDLER();
             interrupt_handler();
     ENDSWITCH
-
-
     */
    
+    int numLine = -1;
+    unsigned int IP = 0, mask = 0b00000000000000001111111100000000;
+    IP = MASKySHIFTz(current_causeCode, mask, 9);
+    //qui IP = 0b0000000000000000xxxxxxx (andiamo ad analizzare gli x)
+
+    if(IP == 0){ return; } //non ci sono più interrupt pendenti, si può uscire dall'handler
+
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
+        //PLT interrupt handler
+        numLine = 1;
+    }
+
+    IP = IP >> 1;
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
+        //INTERVAL TIMER interrupt handler
+        numLine = 2;
+    }
+
+    IP = IP >> 1;
+    if (IP != 0) {
+        //ci sono device interrupts
+        for (int i = 3; i<8; i= i+1){
+            if (IP%2 != 0){
+                numLine = i;
+                break; //appena trova una lina con interrupt esce
+            }
+            IP = IP >> 1;
+        }
+
+        //gestione device interrupt 
+        /** 1. calculate device egster
+         *  2. save 'status code' from the device register (salviamo l'intero registro?)
+         *  3. write che 'command code' on the register (di ack o no)
+         *  4. perform V operation, unblock che process
+         *  5. place the saved 'status code' on the unblocked pcb's reg_v0
+         *  6. put che unblocked pcb un the ready queue
+         *  7. return control to the current process, perform a LDST on the 
+         *     saved exception state at BIOSDATAPAGE
+        */
+
+    }
+
+/*
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  3
+        //DISK DEVICES interrupt handler
+    }
+
+    IP = IP >> 1;
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  4
+        //FLASH DEVICES interrupt handler
+    }
+
+    IP = IP >> 1;
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  5
+        //NETWORK DEVICES interrupt handler
+    }
+
+    IP = IP >> 1;
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  6
+        //PRINTER DEVICES interrupt handler
+    }
+
+    IP = IP >> 1;
+    if (IP % 2 == 0){
+        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  7
+        //TERMINAL DEVICES interrupt handler
+    }
+*/
+
+
 }
 
-void init_devices() {
-    for (int i = 0; i < 50; i = i + 1) { device[i] = NULL; }
-}
-
-int check_dev_installation( int numLine, int numDev){
-
-    unsigned int x, mask; 
-    unsigned int* base_line = 0x1000002C;
-    if (numLine == 4){ base_line = base_line + 0x04;}
-    if (numLine == 5){ base_line = base_line + 0x08;}
-    if (numLine == 6){ base_line = base_line + 0x0C;}
-    if (numLine == 7){ base_line = base_line + 0X10;}
-    x = *base_line;
-    mask = power(2, numDev);
-    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
-    else { return FALSE; }
-}
-
-int check_dev_interruption( int numLine, int numDev){
-
-    unsigned int x, mask; 
-    unsigned int* base_line = 0x10000040;
-    if (numLine == 4){ base_line = base_line + 0x04;}
-    if (numLine == 5){ base_line = base_line + 0x08;}
-    if (numLine == 6){ base_line = base_line + 0x0C;}
-    if (numLine == 7){ base_line = base_line + 0X10;}
-    x = *base_line;
-    mask = power(2, numDev);
-    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
-    else { return FALSE; }
-}
-
-
-int power(int base, int exp){
-    int s=1;
-    for (int i=0; i< exp; i = i+1){ s = s*base; }
-    return s;
-}

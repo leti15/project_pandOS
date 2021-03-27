@@ -6,10 +6,6 @@
 void fooBar();
 void SYS_handler();
 void trap_handler();
-void interrupt_handler();
-void init_devices();
-int check_dev_installation( int numLine, int numDev);
-int check_dev_interruption( int numLine, int numDev);
-int power(int base, int exp);
+void interrupt_handler(unsigned int current_causeCode, int exCode);
 
 #endif /* !defined(EXCEPTIONS_HANDLER_H) */

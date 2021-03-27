@@ -4,24 +4,6 @@
 
 /*
 
-#define STATE_INIT 0b00011000000000000000000000001100
-#define STATE_WAIT 0b00010000000000000000000000000001
-
-//macro to find old kernel/user mode
-#define STATUSO_MODE_MASK 0b00000000000000000000000000100000
-#define STATUSO_MODE_BIT 5
-#define STATUSO_GET_MODE(x)   (((x) & STATUSO_MODE_MASK) >> STATUSO_MODE_BIT)
-
-//macro to find previous kernel/user mode
-#define STATUSP_MODE_MASK 0b00000000000000000000000000001000
-#define STATUSP_MODE_BIT 3
-#define STATUSP_GET_MODE(x)   (((x) & STATUSP_MODE_MASK) >> STATUSP_MODE_BIT)
-
-//macro to find current kernel/user mode
-#define STATUSC_MODE_MASK 0b00000000000000000000000000000010
-#define STATUSC_MODE_BIT 1
-#define STATUSC_GET_MODE(x)   (((x) & STATUSC_MODE_MASK) >> STATUSC_MODE_BIT)
-
 int proc_count;
 HIDDEN int softB_count;
 HIDDEN pcb_PTR readyQ;
@@ -32,13 +14,20 @@ HIDDEN passupvector_t* PUV;
 
 */
 
-
 extern void fooBar();
 extern void test();
+/*
 extern void SYS_handler();
 extern void trap_handler();
-extern void interrupt_handler();
-extern void init_devices();
+extern void interrupt_handler(unsigned int current_causeCode, int exCode);
+*/ 
+
+int proc_count;
+int softB_count;
+pcb_PTR readyQ;    
+pcb_PTR current_proc;
+passupvector_t* PUV;
+semd_t* device[DEVARRSIZE];
 
 int main()
 {

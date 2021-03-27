@@ -1,7 +1,6 @@
 #ifndef COMMONS_H
 #define COMMONS_H
 
-
 #include "pcb.h"
 #include "asl.h"
 #include "pandos_const.h"
@@ -10,6 +9,8 @@
 
 #define STATE_INIT 0b00011000000000001111111100001100
 #define STATE_WAIT 0b00010000000000001111111100000001
+
+#define DEVARRSIZE 50 //grandezza array dei semafori dei device
 
 //macro to find old kernel/user mode
 #define STATUSO_MODE_MASK 0b00000000000000000000000000100000
@@ -27,14 +28,16 @@
 #define STATUSC_GET_MODE(x)   (((x) & STATUSC_MODE_MASK) >> STATUSC_MODE_BIT)
 
 //macro to find if a device is installed or not
-#define DEVICE_CHECK (x, y, z)     ((x & y) >> z)
+#define MASKySHIFTz(x, y, z)    (((x) & y) >> z)
 
-int proc_count;
-HIDDEN int softB_count;
-HIDDEN pcb_PTR readyQ;
-HIDDEN pcb_PTR current_proc;
-HIDDEN passupvector_t PassUpVector [16];
-HIDDEN passupvector_t* PUV;
+//prende in input il numero della line a e del device, torna l'indirizzo del device register
+#define GET_devAddrBase(LINE, DEV)  (0x1000.0054 + ((LINE - 3) * 0x80) + (DEV * 0x10))
+
+extern int proc_count;
+extern int softB_count;
+extern pcb_PTR readyQ;
+extern pcb_PTR current_proc;
+extern passupvector_t* PUV;
 /** puntatore alla coda dei semafori attivi 'semd_h' */
 
 //device semaphores
@@ -47,7 +50,11 @@ HIDDEN passupvector_t* PUV;
  * 48: DEVICE INTERVAL TIMER
  * 49: DEVICE PLT
 */
-HIDDEN semd_t* device[50]; 
+extern semd_t* device[DEVARRSIZE]; 
 
+void remove_from_arrayDev( int* semAdd);
+void init_devices();
+int check_dev_installation( int numLine, int numDev);
+int check_dev_interruption( int numLine, int numDev);
 
 #endif /* !defined(COMMONS_H) */

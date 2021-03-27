@@ -1,4 +1,5 @@
 #include "asl.h"
+
 #define NULL 0
 #define MAXINT 0xFFFFFFFF
 
@@ -8,7 +9,7 @@ static semd_PTR semd_h;
 
 semd_PTR allocSemd() {
     if (semdFree_h == NULL){return NULL;} // se non ci sono più semafori allocabili return NULL
-    
+
     int allocated = 0;
     semd_PTR newsemd = semdFree_h;
     semdFree_h = semdFree_h->s_next;
@@ -108,6 +109,8 @@ pcb_t* removeBlocked(int *semAdd)
                 //controllo se dopo la rimozione il semaforo e' vuoto
                 if (emptyProcQ(tmp->s_procQ))
                 {
+                    //lo rimuovo dalla ASL e dall' array dei device
+                    remove_from_arrayDev(tmp->s_semAdd);
                     old_tmp->s_next = tmp->s_next;
                     tmp->s_next = semdFree_h;
                     semdFree_h = tmp;
@@ -146,10 +149,13 @@ pcb_t* outBlocked(pcb_t *p){
                     elem_toremove = outProcQ( &(tmp->s_procQ), p );
 
                     if(emptyProcQ(tmp->s_procQ))
-                    { //se c'è un solo processo nella coda del semaforo
+                    {   //se c'è un solo processo nella coda del semaforo lo rimuovo dalla ASL
                         old_tmp->s_next = tmp->s_next;
                         tmp->s_next = semdFree_h;
                         semdFree_h = tmp;
+                        
+                        //e lo rimuovo dall'array dei device
+                        remove_from_arrayDev(tmp->s_semAdd);
                     }
                     return elem_toremove;
                 }
