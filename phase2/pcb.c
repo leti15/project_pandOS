@@ -1,5 +1,4 @@
 #include "pcb.h"
-#define NULL 0
 
 static pcb_t pcbFree_table[MAXPROC];
 static pcb_PTR pcbFree_h;
@@ -234,7 +233,7 @@ void insertChild(pcb_t *prnt, pcb_t *p)
             p->p_prev_sib = p;
             p->p_next_sib = p;
         }
-    }else return NULL;
+    }
 }
 
 /*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/

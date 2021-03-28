@@ -1,6 +1,5 @@
 #include "asl.h"
 
-#define NULL 0
 #define MAXINT 0xFFFFFFFF
 
 static semd_t semd_table[MAXPROC+2];
@@ -21,7 +20,7 @@ semd_PTR allocSemd() {
     //trovo dove metterlo nella ASL, dove mettere un semd da 1 risorsa
     semd_PTR temp = semd_h;
     while (temp->s_semAdd != (int*)MAXINT && allocated == 0){
-        if (temp->s_next->s_semAdd > 1 || temp->s_next->s_semAdd == (*int) MAXINT){
+        if (*(temp->s_next->s_semAdd) > 0 || temp->s_next->s_semAdd == (int*) MAXINT){
             newsemd->s_next = temp->s_next;
             temp->s_next = newsemd;
             allocated = 1;

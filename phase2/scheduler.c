@@ -15,7 +15,7 @@ void scheduler()
         if (proc_count > 0 & softB_count == 0){ PANIC();}
     }
 
-    current_proc = removeProcQ(readyQ);
+    current_proc = removeProcQ(&readyQ);
     
     //carica 5 millisecondi in PLT
     setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));

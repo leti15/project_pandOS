@@ -2,7 +2,6 @@
 #include "scheduler.h"
 #include "exceptions_handler.h"
 
-/*
 int proc_count;
 int softB_count;
 pcb_PTR readyQ;
@@ -10,14 +9,6 @@ pcb_PTR current_proc;
 passupvector_t* PUV;
 semd_t* device[DEVARRSIZE];
 // puntatore alla coda dei semafori attivi 'semd_h'
-*/
-
-HIDDEN int proc_count;
-HIDDEN int softB_count;
-HIDDEN pcb_PTR readyQ;    
-HIDDEN pcb_PTR current_proc;
-HIDDEN passupvector_t* PUV;
-HIDDEN semd_t* device[DEVARRSIZE];
 
 int main()
 {
@@ -49,5 +40,7 @@ int main()
     //chiama lo scheduler
     scheduler();
     
+
+
     return 0;
 }

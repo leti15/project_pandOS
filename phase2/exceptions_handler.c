@@ -19,7 +19,7 @@ void foobar(){
 12 OV = Arithmetic Overflow Exception
 */
     //e' in kernel mode con interrupt disabilitati    
-    state_t* state_reg = BIOSDATAPAGE;
+    state_t* state_reg = (state_t*) BIOSDATAPAGE;
     current_proc->p_s = *state_reg;
 
     unsigned int current_causeCode = getCAUSE();
@@ -88,7 +88,7 @@ void SYS_handler(){
             insertProcQ(&tempQueue, current_proc);
             //emptyChild == 1 se NON ha figli
 
-            while (emptyProcQ(&tempQueue) != 1) //finchè non è vuota continuo 
+            while (emptyProcQ(tempQueue) != 1) //finchè non è vuota continuo 
             {
                 pcb_PTR to_terminate = removeProcQ(&tempQueue);
 
@@ -128,7 +128,7 @@ void SYS_handler(){
 
             if (*temp == -1 || temp == device[48]){
                 //INCREMENTIAMO IL CPU TIME 
-                unsigned int tmp = STCK(tmp);
+                int tmp = STCK(tmp);
                 current_proc->p_time = current_proc->p_time + tmp;
 
                 if(insertBlocked(temp, current_proc) == TRUE){ PANIC(); }
@@ -160,7 +160,8 @@ void SYS_handler(){
 
         }else if (current_a0 == 5){
             //wait for IO    SYSCALL(IOWAIT, intlNo, dnum, termRead);
-            if (current_proc->p_s.gpr[4] == NULL || current_proc->p_s.gpr[5] == NULL || current_proc->p_s.gpr[6] == NULL){ return NULL; }
+            if (current_proc->p_s.gpr[4] == NULL || current_proc->p_s.gpr[5] == NULL || current_proc->p_s.gpr[6] == NULL)
+            { SYSCALL(TERMPROCESS, 0, 0, 0); }
             
             /**
              * 0-7: DEVICE LINEA 3
@@ -191,11 +192,11 @@ void SYS_handler(){
                     //se il device è installato lo creo
                     semd_PTR newsem = allocSemd();
                     device[dev_pos] = newsem; //lo salvo nell'array di semafori dei device
-                }else{  return NULL;  }//device non installato --> errore!
+                }
             }
             
             //faccio P operation sul semaforo
-            SYSCALL(PASSEREN, device[dev_pos]->s_semAdd, 0, 0);
+            SYSCALL(PASSEREN, (int) device[dev_pos]->s_semAdd, 0, 0);
 
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
@@ -217,7 +218,7 @@ void SYS_handler(){
             }
             
             //faccio P operation sul semaforo
-            SYSCALL(PASSEREN, device[48]->s_semAdd, 0, 0);
+            SYSCALL(PASSEREN, (int) device[48]->s_semAdd, 0, 0);
 
         }else if (current_a0 == 8){
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
@@ -225,7 +226,7 @@ void SYS_handler(){
             //INCREMENTIAMO IL PC
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc  + 4; 
 
-            current_proc->p_s.gpr[1] = current_proc->p_supportStruct;
+            current_proc->p_s.gpr[1] = (unsigned int) current_proc->p_supportStruct;
         }else{
             //wrong sys call number (reg_a0 >= 9)
             PassUpOrDie(GENERALEXCEPT);
@@ -272,9 +273,11 @@ int interrupt_handler(){
         //PLT interrupt handler
         numLine = 1;
         //carica 5 millisecondi in PLT
+        unsigned int tmp = STCK(tmp);
+        current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
         setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
-        state_t* state_reg = BIOSDATAPAGE;
-        current_proc->p_s = *state_reg;
+        state_t* state_register = (state_t*) BIOSDATAPAGE;
+        current_proc->p_s = *state_register;
         insertProcQ(&readyQ, current_proc);
         scheduler();
 
@@ -379,7 +382,7 @@ void PassUpOrDie(int EXCEPT){
             insertProcQ(&tempQueue, current_proc);
             //emptyChild == 1 se NON ha figli
 
-            while (emptyProcQ(&tempQueue) != 1) //finchè non è vuota continuo 
+            while (emptyProcQ(tempQueue) != 1) //finchè non è vuota continuo 
             {
                 pcb_PTR to_terminate = removeProcQ(&tempQueue);
 
