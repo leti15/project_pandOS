@@ -3,41 +3,24 @@
 #include "exceptions_handler.h"
 
 /*
-
-int proc_count;
-HIDDEN int softB_count;
-HIDDEN pcb_PTR readyQ;
-HIDDEN pcb_PTR current_proc;
-HIDDEN passupvector_t PassUpVector [16];
-HIDDEN passupvector_t* PUV;
-// puntatore alla coda dei semafori attivi 'semd_h'
-
-*/
-
-extern void fooBar();
-extern void test();
-/*
-extern void SYS_handler();
-extern void trap_handler();
-extern void interrupt_handler(unsigned int current_causeCode, int exCode);
-*/ 
-
 int proc_count;
 int softB_count;
-pcb_PTR readyQ;    
+pcb_PTR readyQ;
 pcb_PTR current_proc;
 passupvector_t* PUV;
 semd_t* device[DEVARRSIZE];
+// puntatore alla coda dei semafori attivi 'semd_h'
+*/
+
+HIDDEN int proc_count;
+HIDDEN int softB_count;
+HIDDEN pcb_PTR readyQ;    
+HIDDEN pcb_PTR current_proc;
+HIDDEN passupvector_t* PUV;
+HIDDEN semd_t* device[DEVARRSIZE];
 
 int main()
 {
-
-/**  Da fare:
-*    - Inizializzare i moduli di fase 1 ( initPcbs() e initSemd() )
-*    - Inizializzare le variabili di cui sopra
-*    - Popolare il pass up vector con gestore e stack pointer per eccezioni e TLB-Refill
-*/
-
     proc_count = 0;
     softB_count = 0;
     readyQ = mkEmptyProcQ();

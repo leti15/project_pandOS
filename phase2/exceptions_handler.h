@@ -5,7 +5,7 @@
 
 void fooBar();
 void SYS_handler();
-void trap_handler();
 int interrupt_handler();
+void PassUpOrDie(int EXCEPT);
 
 #endif /* !defined(EXCEPTIONS_HANDLER_H) */

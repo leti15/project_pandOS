@@ -1,10 +1,6 @@
 #include "commons.h"
 #include "exceptions_handler.h"
 
-/** TODO: 
- *  --implementa "PassUpOrDie"
-*/
-
 void foobar(){
 /** in base al 'cause_register' pg.18 di MPS3 e di preciso al campo 'ExcCode'
  *  distinguiamo i diversi interrupt
@@ -35,13 +31,16 @@ void foobar(){
         interrupt_handler();
     }else if(exCode >=1 && exCode <= 3){
         //eccezioni TLB
-        uTLB_RefillHandler();
+        PassUpOrDie(PGFAULTEXCEPT);
     }else if( (exCode > 3 && exCode <= 7) || (exCode > 8 && exCode <= 12) ){
         //program trap exception handler
-        trap_handler();
+        PassUpOrDie(GENERALEXCEPT);
     }else if(exCode == 8){
         //system calls
         SYS_handler();
+    }else{
+        current_proc->p_supportStruct = NULL;
+        PassUpOrDie(GENERALEXCEPT);
     }
 }
 
@@ -198,13 +197,10 @@ void SYS_handler(){
             //faccio P operation sul semaforo
             SYSCALL(PASSEREN, device[dev_pos]->s_semAdd, 0, 0);
 
-            //va fatto altro.................................!!!!!!!!!
-
-
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
 
-            //AGGIORNIAMO CPUT TIME
+            //AGGIORNIAMO CPU TIME
             unsigned int tmp = STCK(tmp);
             current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
 
@@ -232,17 +228,10 @@ void SYS_handler(){
             current_proc->p_s.gpr[1] = current_proc->p_supportStruct;
         }else{
             //wrong sys call number (reg_a0 >= 9)
-            /**dobbiamo eseguire un'operazione "pass up or die" 
-             * usando il valore dell'indice ' GENERALEXCEPT '
-             */
+            PassUpOrDie(GENERALEXCEPT);
         }
     }
     
-}
-
-void trap_handler(){
-
-
 }
 
 int interrupt_handler(){
@@ -379,3 +368,42 @@ int interrupt_handler(){
     interrupt_handler();
 }
 
+void PassUpOrDie(int EXCEPT){
+    if (current_proc->p_supportStruct != NULL){
+        current_proc->p_supportStruct->sup_exceptState[EXCEPT] = *(state_t*)BIOSDATAPAGE;
+        LDCXT(current_proc->p_s.gpr[26], current_proc->p_s.status, current_proc->p_s.pc_epc);
+    }else{
+            pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati 
+            pcb_PTR temp = current_proc;
+            outChild(current_proc);
+            insertProcQ(&tempQueue, current_proc);
+            //emptyChild == 1 se NON ha figli
+
+            while (emptyProcQ(&tempQueue) != 1) //finchè non è vuota continuo 
+            {
+                pcb_PTR to_terminate = removeProcQ(&tempQueue);
+
+                while(emptyChild(to_terminate) != 1)
+                {   //se ha figli
+                    pcb_PTR child_toRemove = removeChild(to_terminate);
+                    insertProcQ(&tempQueue, child_toRemove);
+                }
+
+                int bool_dev_sem;
+                //a questo punto 'to_terminate' non avrà più figli e lo posso terminare
+                if (to_terminate->p_semAdd != NULL){ 
+                    bool_dev_sem = check_dev_semAdd(to_terminate->p_semAdd);
+                    if (!bool_dev_sem && outBlocked(to_terminate) != NULL){   
+                        //aggiusta semaforo relativo
+                        *(to_terminate->p_semAdd) = *(to_terminate->p_semAdd) + 1;
+                    }
+                }
+                outProcQ(&readyQ, to_terminate);
+                freePcb(to_terminate);
+                proc_count = proc_count - 1;
+                if(bool_dev_sem){ softB_count = softB_count - 1;}
+                
+            }
+            scheduler();
+    }
+}

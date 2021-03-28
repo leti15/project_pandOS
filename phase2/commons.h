@@ -52,6 +52,9 @@ extern passupvector_t* PUV;
 */
 extern semd_t* device[DEVARRSIZE]; 
 
+extern void fooBar();
+extern void test(); 
+
 void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);
