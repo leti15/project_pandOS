@@ -3,6 +3,19 @@
 void breakPoint(){}
 void breakPoint2(){}
 void breakPoint3(){}
+void sys1(){}
+void sys2(){}
+void sys3(){}
+void sys4(){}
+void sys5(){}
+void sys6(){}
+void sys7(){}
+void sys8(){}
+void sysverog(){}
+void syspasse(){}
+void sysPLT(){}
+void sysIT(){}
+void sysDEV(){}
 
 void * memcpy (void *dest, const void *src, size_t len)
 {
@@ -23,7 +36,7 @@ void remove_from_arrayDev( int* semAdd){
 }
 
 void init_devices() {
-    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = NULL; }
+    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = ((void *)0xFFFFFFFF); }
 }
 
 int check_dev_installation( int numLine, int numDev){

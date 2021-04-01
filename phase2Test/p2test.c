@@ -126,7 +126,6 @@ void print(char *msg) {
 			PANIC();
 		s++;	
 	}
-breakPoint();
 	SYSCALL(VERHOGEN, (int)&term_mut, 0, 0);				/* V(term_mut) */
 }
 

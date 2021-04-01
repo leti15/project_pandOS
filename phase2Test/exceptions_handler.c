@@ -41,7 +41,7 @@ void fooBar(){
         //system calls
         SYS_handler();
     }else{
-        current_proc->p_supportStruct = NULL;
+        current_proc->p_supportStruct = ((void *)0xFFFFFFFF);
         PassUpOrDie(GENERALEXCEPT);
     }
 }
@@ -63,8 +63,9 @@ void SYS_handler(){
     }else{
         int current_a0 = current_proc->p_s.reg_a0;
         if (current_a0 == 1){
+            sys1();
             //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
-            if (current_proc->p_s.gpr[4] == NULL){  sys_terminate(); } 
+            if (current_proc->p_s.gpr[4] == ((void *)0xFFFFFFFF)){  sys_terminate(); } 
             
             pcb_PTR newProc = allocPcb();
             if (newProc == NULL){ 
@@ -85,20 +86,28 @@ void SYS_handler(){
 
        }else if (current_a0 == 2){
             //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
+            sys2();
             sys_terminate();
 
         }else if (current_a0 == 3){
+            sys3();
             //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
-           sys_p(current_proc->p_s.reg_a1);
+            sys_p(current_proc->p_s.reg_a1);
 
         }else if (current_a0 == 4){
+            sys4();
             //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
             sys_v(current_proc->p_s.reg_a1);
+
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4;
+            
             LDST((state_t*) &current_proc->p_s);
 
         }else if (current_a0 == 5){
+            
             //wait for IO    SYSCALL(IOWAIT, intlNo, dnum, termRead);
-            if (current_proc->p_s.reg_a1 == NULL || current_proc->p_s.gpr[5] == NULL)
+            if (current_proc->p_s.reg_a1 == ((void *)0xFFFFFFFF) || current_proc->p_s.gpr[5] == ((void *)0xFFFFFFFF) )
             {  sys_terminate();  }
             
             /**
@@ -119,24 +128,33 @@ void SYS_handler(){
             int dnum = current_proc->p_s.gpr[5];
             int dev_pos = (intlNo - 3)*8 + dnum;
 
-            if (current_proc->p_s.gpr[6] == 1){
+            if (current_proc->p_s.reg_a3 == 1){
                 //terminale in lettura
                 dev_pos = dev_pos + 8;
             }
 
-            if  (device[dev_pos] == NULL){
+            if (device[dev_pos] == NULL){
                 //non c'è ancora nessun semaforo per quel device
                 if (check_dev_installation(intlNo, dnum) == 1){
                     //se il device è installato lo creo
                     semd_PTR newsem = allocSemd();
-                    device[dev_pos] = newsem; //lo salvo nell'array di semafori dei device
-                }
+                    if(newsem == NULL){ PANIC();}
+                    else{ 
+                        device[dev_pos] = newsem;  //lo salvo nell'array di semafori dei device
+                        //faccio P operation sul semaforo
+                        sys_p(device[dev_pos]->s_semAdd);
+                    }   
+                }       
+            }else{
+                //faccio P operation sul semaforo
+                sys5();
+                sys_p(device[dev_pos]->s_semAdd);
             }
             
-            //faccio P operation sul semaforo
-            sys_p(device[dev_pos]->s_semAdd);
+            
 
         }else if (current_a0 == 6){
+            sys6();
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
 
             //AGGIORNIAMO CPU TIME
@@ -148,18 +166,37 @@ void SYS_handler(){
             LDST((state_t*) &current_proc->p_s);
     
         }else if (current_a0 == 7){
+            sys7();
             //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
   
             if  (device[48] == NULL){
                 //non c'è ancora nessun semaforo per quel device
                 semd_PTR newsem = allocSemd();
-                device[48] = newsem;
+                if(newsem == NULL){ PANIC();}
+                else{ device[48] = newsem; }
             }
             
             //faccio P operation sul semaforo
-            sys_p(device[48]->s_semAdd);
+            *device[48]->s_semAdd = *device[48]->s_semAdd - 1;
+
+            //INCREMENTIAMO IL PC 
+            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
+    
+            //INCREMENTIAMO IL CPU TIME 
+            int tmp = STCK(tmp);
+            current_proc->p_time = current_proc->p_time + tmp;
+
+            //lo stato del pcb (state_t) lo abbiamo già aggiornato all'inizio di fooBar
+        
+            //incrementiamo softblocked se è un semAdd di device
+            softB_count = softB_count + 1;
+            if(insertBlocked(device[48]->s_semAdd, current_proc) == TRUE){ PANIC(); }
+                
+            scheduler();
+        
 
         }else if (current_a0 == 8){
+            sys8();
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
             //INCREMENTIAMO IL PC
@@ -199,141 +236,140 @@ int interrupt_handler(){
             interrupt_handler();
     ENDSWITCH
     */
+   breakPoint();
 
     unsigned int current_causeCode = getCAUSE();
     int numLine = -1;
     unsigned int IP = 0, mask = 0b00000000000000001111111100000000;
-    IP = MASKySHIFTz(current_causeCode, mask, 9);
+    IP = MASKySHIFTz(current_causeCode, mask, 8);
     //qui IP = 0b0000000000000000xxxxxxx (andiamo ad analizzare gli x)
 
-    if(IP == 0){ return TRUE; } //non ci sono più interrupt pendenti, si può uscire dall'handler
+    if (IP % 2 != 0){ PANIC();}
+    else{
+        IP = IP >> 1;
+        if(IP == 0){ return TRUE; } //non ci sono più interrupt pendenti, si può uscire dall'handler
 
-    if (IP % 2 != 0){
-        //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
-        //PLT interrupt handler
-        numLine = 1;
+        if (IP % 2 != 0){
+            sysPLT();
+            //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
+            //PLT interrupt handler
+            numLine = 1;
 
-        //carica 5 millisecondi in PLT
-        unsigned int tmp = STCK(tmp);
-        current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
-        setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
+            //carica 5 millisecondi in PLT
+            unsigned int tmp = STCK(tmp);
+            current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
+            setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
 
-        //salvo lo stato 
-        state_t* state_register = (state_t*) BIOSDATAPAGE;
-        current_proc->p_s = *state_register;
+            //salvo lo stato 
+            state_t* state_register = (state_t*) BIOSDATAPAGE;
+            current_proc->p_s = *state_register;
 
-        //inserisco il pcb nella redayQ
-        insertProcQ(&readyQ, current_proc);
+            //inserisco il pcb nella redayQ
+            insertProcQ(&readyQ, current_proc);
 
-        //passo il controllo allo scheduler
-        scheduler();
-
-    }else{
+            //passo il controllo allo scheduler
+            scheduler();
+        }
 
         IP = IP >> 1;
         if (IP % 2 != 0){
-            //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
-            //INTERVAL TIMER interrupt handler
-            numLine = 2;
-            LDIT(100000);  // setto interval timer di 100 millisecondi (=100000 microsecondi)
-            
-            while (emptyProcQ(device[48]->s_procQ) != 1){
-                //finchè non ho svuotato la coda dei processi bloccati all' interval timer
-                //aggiungo una risorsa al semaforo corrispondente
-                *(device[48]->s_semAdd) = *(device[48]->s_semAdd)  + 1;
-
-                if(*(device[48]->s_semAdd)  - 1 < 0){
-                    //se ora c'è una risorsa disponibile la uso, quindi riesumo un pcb e lo metto nella readyQ
-                    pcb_PTR newpcb = removeBlocked(device[48]->s_semAdd);
-                    insertProcQ(&readyQ, newpcb);
-                    //diminuisco soft blocked
-                    softB_count = softB_count - 1; 
-                            
-                }
-            }
-
-            //ripristino le risorse del semaforo
-            if(*(device[48]->s_semAdd) == 0){ return TRUE;}
-            else{
-                *(device[48]->s_semAdd) = 0;
-                return FALSE;
-            }
-
-            LDST((state_t*) BIOSDATAPAGE);
-
-        }else{
-
-            IP = IP >> 1;
-            numLine = 3;
-            while (IP != 0) {
-                //ci sono device interrupts
-
-                while(IP % 2 == 0){
-                    //finchè non sono in corrispondenza del bit della linea con pending interrupt faccio lo shift 
-                    IP = IP >> 1;
-                    numLine = numLine + 1;
-                }
-
-                /*  arrivati qui avro' interrupt pendenti sulla linea 'numLine' perchè il
-                 *  (numLine)-esimo bit sarà acceso */
-
-                //gestisco device interrupt 
-                /**1. calculate device register
-                *  2. save 'status code' from the device register (salviamo l'intero registro?)
-                *  3. write che 'command code' on the register (di ack o no)
-                *  4. perform V operation, unblock che process
-                *  5. place the saved 'status code' on the unblocked pcb's reg_v0
-                *  6. put che unblocked pcb un the ready queue
-                *  7. return control to the current process, perform a LDST on the 
-                *     saved exception state at BIOSDATAPAGE
-                */
-            
-                //identifico quale device è interrotto attraverso Interruption Bit Map
-                int numDev = 0;
-                while (check_dev_interruption(numLine, numDev) == FALSE){ numDev = numDev + 1;}
+            sysIT();
+                //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
+                //INTERVAL TIMER interrupt handler
+                numLine = 2;
+                LDIT(100000);  // setto interval timer di 100 millisecondi (=100000 microsecondi)
                 
-                unsigned int mask, device_status, base_device_reg;
-                //troviamo la base del device register
-                base_device_reg = GET_devAddrBase(numLine, numDev);
-                //troviamo lo status del device
-                device_status = *((unsigned int*) base_device_reg + 0x0);
+                while (emptyProcQ(device[48]->s_procQ) != 1){
+                    //finchè non ho svuotato la coda dei processi bloccati all' interval timer
+                    //aggiungo una risorsa al semaforo corrispondente
+                    *(device[48]->s_semAdd) = *(device[48]->s_semAdd)  + 1;
 
-                //setto campo COMMAND del device register con ACK
-                //recive 0x0 
-                //trasmit 0x8
-                if(numDev>8){ *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0x4) = ACK; }
-                else { *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0xC) = ACK;  }
-
-                //setto status a ready
-                //*((unsigned int*) base_device_reg + 0x00) = READY;
-                
-
-                //faccio operazione V
-                int* temp = device[(numLine - 3)*8 + numDev]->s_semAdd;
-                *temp = *temp + 1;
-                pcb_PTR newpcb;
-
-                if(*temp - 1 < 0){
-                    //se ora c'è una risorsa disponibile
-                    newpcb = removeBlocked(temp);
-                    if(newpcb == NULL){ return FALSE; }
-                    newpcb->p_s.gpr[1] = device_status;
-                    insertProcQ(&readyQ, newpcb);
-
-                    //siccome era un semaforo dei device devo diminuire soft blocked
-                    softB_count = softB_count - 1; 
+                    if(*(device[48]->s_semAdd)  - 1 < 0){
+                        //se ora c'è una risorsa disponibile la uso, quindi riesumo un pcb e lo metto nella readyQ
+                        pcb_PTR newpcb = removeBlocked(device[48]->s_semAdd);
+                        insertProcQ(&readyQ, newpcb);
+                        //diminuisco soft blocked
+                        softB_count = softB_count - 1; 
+                                
+                    }
                 }
 
-                //return control to current process
+                //ripristino le risorse del semaforo
+                if(*(device[48]->s_semAdd) == 0){ return TRUE;}
+                else{
+                    *(device[48]->s_semAdd) = 0;
+                    return FALSE;
+                }
+
                 LDST((state_t*) BIOSDATAPAGE);
+        }
 
-            }
+        IP = IP >> 1;
+        numLine = 3;
+        while (IP != 0 && numLine<=7) {
+            sysDEV();
+                    //ci sono device interrupts
+
+                     while(IP % 2 == 0){
+                        //finchè non sono in corrispondenza del bit della linea con pending interrupt faccio lo shift 
+                        IP = IP >> 1;
+                        numLine = numLine + 1;
+                    }
+
+                    /*  arrivati qui avro' interrupt pendenti sulla linea 'numLine' perchè il
+                    *  (numLine)-esimo bit sarà acceso */
+
+                    //gestisco device interrupt 
+                    /**1. calculate device register
+                    *  2. save 'status code' from the device register (salviamo l'intero registro?)
+                    *  3. write che 'command code' on the register (di ack o no)
+                    *  4. perform V operation, unblock che process
+                    *  5. place the saved 'status code' on the unblocked pcb's reg_v0
+                    *  6. put che unblocked pcb un the ready queue
+                    *  7. return control to the current process, perform a LDST on the 
+                    *     saved exception state at BIOSDATAPAGE
+                    */
+                
+                    //identifico quale device è interrotto attraverso Interruption Bit Map
+                    int numDev = 0;
+                    while (check_dev_interruption(numLine, numDev) == FALSE){ numDev = numDev + 1;}
+                    
+                    unsigned int mask, device_status, base_device_reg;
+                    //troviamo la base del device register
+                    base_device_reg = GET_devAddrBase(numLine, numDev);
+                    //troviamo lo status del device
+                    device_status = *((unsigned int*) base_device_reg + 0x0);
+
+
+                    if (numLine == 7){
+
+                        //recive = read 0x0 
+                        //trasmit = write 0x8
+                        if (GET_devAddrBase(numLine, numDev) != READY) {
+                            //se il recive è diverso da ready ha un interrupt
+                            //setto campo COMMAND del device register read con ACK
+                            *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0x4) = ACK;
+                        }else {
+                            //se read è READYC avrò interrupt su write
+                            //setto campo COMMAND del device register write con ACK
+                            *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0xC) = ACK; 
+                        }
+                    }else{
+                        //se non ho un terminale (linea 7)
+                        *((unsigned int*) GET_devAddrBase(numLine, numDev) + 0x4) = ACK;
+                    }
+
+                    //faccio operazione V
+                    sys_v(device[(numLine - 3)*8 + numDev]->s_semAdd);
+
+                    //return control to current process
+                    LDST((state_t*) BIOSDATAPAGE);
         }
     }
-    interrupt_handler();
 }
 
 void sys_terminate (){
+    breakPoint2();
             pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati 
             pcb_PTR temp = current_proc;
             outChild(current_proc);
@@ -371,41 +407,48 @@ void sys_terminate (){
 }
 
 void sys_p (int* temp){
-    breakPoint2();
-    if (temp == NULL){  sys_terminate(); }
+    syspasse();
+    if (temp == ((void *)0xFFFFFFFF)){  sys_terminate(); }
     else{
             
-            *temp = *temp - 1;
-            //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
+        *temp = *temp - 1;
 
-            //if ( (*(temp) == -1) || temp == device[48]->s_semAdd ){
-            if ( *(temp) < 0 ){
+        //INCREMENTIAMO IL PC 
+        current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
+        
+        
+        if ( *(temp) < 0 && headBlocked(temp) == NULL){
                 /** se ora le risorse sono -1, ovvero sono finite, devo bloccare il processo al semaforo quindi:
                  *  -->aggiorno il CPUtime del processo
                  *  -->lo inserisco nella coda del semaforo
                 */
 
+            //INCREMENTIAMO IL CPU TIME 
+            int tmp = STCK(tmp);
+            current_proc->p_time = current_proc->p_time + tmp;
 
-                //INCREMENTIAMO IL CPU TIME 
-                int tmp = STCK(tmp);
-                current_proc->p_time = current_proc->p_time + tmp;
+            //lo stato del pcb (state_t) lo abbiamo già aggiornato all'inizio di fooBar
 
-                //lo stato del pcb (state_t) lo abbiamo già aggiornato all'inizio di fooBar
-
-                //incrementiamo softblocked se è un semAdd di device
-                if(check_dev_semAdd(temp) == TRUE){ softB_count = softB_count + 1;}
-                if(insertBlocked(temp, current_proc) == TRUE){ PANIC(); }
+            //incrementiamo softblocked se è un semAdd di device
+            if(check_dev_semAdd(temp) == TRUE){ softB_count = softB_count + 1;}
+            if(insertBlocked(temp, current_proc) == TRUE){ PANIC(); }
                 
-                scheduler();
-            }          
+            scheduler();
+            
+        }else{
+             syspasse();
+
+            LDST(&(current_proc->p_s));
+        } 
+               
     }
 
 }
 
 void sys_v (int* temp){
+    sysverog();
     
-    if (temp == NULL){ sys_terminate(); }
+    if (temp == ((void *)0xFFFFFFFF)){ sys_terminate(); }
     else {
     
         *temp = *temp + 1; 
@@ -417,8 +460,6 @@ void sys_v (int* temp){
                 //se è andato tutto bene, quindi removeBlocked ha restituito un pcb, lo inserisco nella readyQ
                 newpcb->p_semAdd = NULL;
                 insertProcQ(&readyQ, newpcb); 
-                 
-                 breakPoint3();
                 
                 if(check_dev_semAdd(temp) == TRUE){
                     //se è un semaforo device
@@ -431,16 +472,14 @@ void sys_v (int* temp){
                     softB_count = softB_count - 1;
                 }
             }
-
-            //INCREMENTIAMO IL PC 
-            current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4;
         }
     }
 
 }
 
 void PassUpOrDie(int EXCEPT){
-    if (current_proc->p_supportStruct != NULL){
+    breakPoint3();
+    if (current_proc->p_supportStruct != ((void *)0xFFFFFFFF)){
         current_proc->p_supportStruct->sup_exceptState[EXCEPT] = *(state_t*)BIOSDATAPAGE;
         LDCXT(current_proc->p_s.gpr[26], current_proc->p_s.status, current_proc->p_s.pc_epc);
     }else{
