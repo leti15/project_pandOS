@@ -1,6 +1,6 @@
 #ifndef COMMONS_H
 #define COMMONS_H
-#include <stddef.h>
+//#include <stddef.h>
 #include "pandos_types.h"
 
 #define STATE_INIT 0b00011000000000001111111100000100
@@ -68,7 +68,7 @@ void sysPLT();
 void sysIT();
 void sysDEV();
 
-void * memcpy (void *dest, const void *src, size_t len);
+void * memcpy (void *dest, const void *src, unsigned long len);
 void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);

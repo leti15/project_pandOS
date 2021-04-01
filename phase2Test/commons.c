@@ -1,4 +1,8 @@
 #include "commons.h"
+#ifndef __SIZE_TYPE__
+#define __SIZE_TYPE__ long unsigned int
+#endif
+typedef __SIZE_TYPE__ size_t;
 
 void breakPoint(){}
 void breakPoint2(){}
@@ -40,31 +44,29 @@ void init_devices() {
 }
 
 int check_dev_installation( int numLine, int numDev){
-
     unsigned int x, mask; 
-    unsigned int* base_line = (unsigned int *) 0x1000002C;
-    if (numLine == 4){ base_line = base_line + 0x04;}
-    if (numLine == 5){ base_line = base_line + 0x08;}
-    if (numLine == 6){ base_line = base_line + 0x0C;}
-    if (numLine == 7){ base_line = base_line + 0X10;}
+    unsigned int* base_line;
+    if (numLine == 4){ base_line = 0x1000002C + 0x04;}
+    if (numLine == 5){ base_line = 0x1000002C + 0x08;}
+    if (numLine == 6){ base_line = 0x1000002C + 0x0C;}
+    if (numLine == 7){ base_line = 0x1000002C + 0X10;}
     x = *base_line;
     
     //mask = 2^numDev
     mask = 1;
     for (int i=0; i< numDev; i = i+1){ mask = mask*2; }
-
-    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
+    if ( ((x & mask) >> numDev) > 0){ sys7(); return TRUE; } 
     else { return FALSE; }
 }
 
 int check_dev_interruption( int numLine, int numDev){
 
     unsigned int x, mask; 
-    unsigned int* base_line = (unsigned int*) 0x10000040;
-    if (numLine == 4){ base_line = base_line + 0x04;}
-    if (numLine == 5){ base_line = base_line + 0x08;}
-    if (numLine == 6){ base_line = base_line + 0x0C;}
-    if (numLine == 7){ base_line = base_line + 0X10;}
+    unsigned int* base_line;
+    if (numLine == 4){ base_line = 0x10000040 + 0x04;}
+    if (numLine == 5){ base_line = 0x10000040 + 0x08;}
+    if (numLine == 6){ base_line = 0x10000040 + 0x0C;}
+    if (numLine == 7){ base_line = 0x10000040 + 0X10;}
     x = *base_line;
     
     //mask = 2^numDev

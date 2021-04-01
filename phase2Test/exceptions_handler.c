@@ -133,13 +133,16 @@ void SYS_handler(){
                 dev_pos = dev_pos + 8;
             }
 
-            if (device[dev_pos] == NULL){
+            if (device[dev_pos] == ((void *)0xFFFFFFFF)){
+                sys5();
                 //non c'è ancora nessun semaforo per quel device
                 if (check_dev_installation(intlNo, dnum) == 1){
+                    sys5();
                     //se il device è installato lo creo
                     semd_PTR newsem = allocSemd();
                     if(newsem == NULL){ PANIC();}
                     else{ 
+                        sys5();
                         device[dev_pos] = newsem;  //lo salvo nell'array di semafori dei device
                         //faccio P operation sul semaforo
                         sys_p(device[dev_pos]->s_semAdd);
@@ -147,7 +150,7 @@ void SYS_handler(){
                 }       
             }else{
                 //faccio P operation sul semaforo
-                sys5();
+                
                 sys_p(device[dev_pos]->s_semAdd);
             }
             
@@ -436,7 +439,7 @@ void sys_p (int* temp){
             scheduler();
             
         }else{
-             syspasse();
+            syspasse();
 
             LDST(&(current_proc->p_s));
         } 
