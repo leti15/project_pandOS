@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "pandos_types.h"
 
-#define STATE_INIT 0b00011000000000001111111100001100
+#define STATE_INIT 0b00011000000000001111111100000100
 #define STATE_WAIT 0b00010000000000001111111100000001
 
 #define DEVARRSIZE 50 //grandezza array dei semafori dei device
@@ -51,11 +51,15 @@ extern passupvector_t* PUV;
 */
 extern semd_t* device[DEVARRSIZE]; 
 
+void breakPoint();
+void breakPoint2();
+void breakPoint3();
 void * memcpy (void *dest, const void *src, size_t len);
 void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
+int find_dev_index(int* semAdd);
 
 #endif /* !defined(COMMONS_H) */

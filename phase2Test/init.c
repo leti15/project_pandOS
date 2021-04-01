@@ -28,10 +28,12 @@ int main()
     readyQ = mkEmptyProcQ();
     current_proc = NULL;
     
-    PUV->exception_handler = (unsigned int) ((memaddr) fooBar);
-    PUV->exception_stackPtr = (unsigned int) 0x20001000;
-    PUV->tlb_refill_handler = (unsigned int) ((memaddr) uTLB_RefillHandler);
-    PUV->tlb_refill_stackPtr = (unsigned int) 0x20001000;
+    PUV = (passupvector_t*) PASSUPVECTOR;
+
+    PUV->exception_handler = ((memaddr) fooBar);
+    PUV->exception_stackPtr = 0x20001000;
+    PUV->tlb_refill_handler = ((memaddr) uTLB_RefillHandler);
+    PUV->tlb_refill_stackPtr = 0x20001000;
 
     initPcbs();
     initASL();
@@ -41,17 +43,17 @@ int main()
     
     // inizializzo il primo processo
     pcb_PTR p = allocPcb();
+    proc_count = 1;
     p->p_s.status = STATE_INIT; 
     p->p_time = 0;
-    p->p_s.pc_epc = (unsigned int) (memaddr) test; // PC set to the address of test()
-    p->p_s.gpr[24] = (unsigned int) (memaddr) test;
-    RAMTOP(p->p_s.gpr[26]); // SP set to RAMTOP?
+    p->p_semAdd = NULL;
+    p->p_s.pc_epc = (memaddr) test; // PC set to the address of test()
+    p->p_s.gpr[24] = (memaddr) test;
+    RAMTOP(p->p_s.gpr[26]); 
     insertProcQ(&readyQ, p);
 
     //chiama lo scheduler
     scheduler();
     
-
-
     return 0;
 }

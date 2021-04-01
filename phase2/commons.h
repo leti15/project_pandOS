@@ -57,5 +57,6 @@ void init_devices();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
+int find_dev_index(int* semAdd);
 
 #endif /* !defined(COMMONS_H) */

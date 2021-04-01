@@ -1,5 +1,9 @@
 #include "commons.h"
 
+void breakPoint(){}
+void breakPoint2(){}
+void breakPoint3(){}
+
 void * memcpy (void *dest, const void *src, size_t len)
 {
   char *d = dest;
@@ -65,4 +69,12 @@ int check_dev_semAdd(int* semAdd){
         }
     }
     return FALSE;
+}
+
+int find_dev_index(int* semAdd){
+    for (int i=0; i<DEVARRSIZE; i = i+1){
+        if (device[i]->s_semAdd == semAdd){
+            return i;
+        }
+    }
 }

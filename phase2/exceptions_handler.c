@@ -127,14 +127,22 @@ void SYS_handler(){
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
             if (*temp == -1 || temp == (int*) device[48]){
+                /** se ora le risorse sono -1, ovvero sono finite, devo bloccare il processo al semaforo quindi:
+                 *  -->aggiorno il CPUtime del processo
+                 *  -->ùlo inserisco nella coda del semaforo
+                */
                 //INCREMENTIAMO IL CPU TIME 
                 int tmp = STCK(tmp);
                 current_proc->p_time = current_proc->p_time + tmp;
 
+                //lo stato del pcb (state_t) lo abbiamo già aggiornato all'inizio di fooBar
+
+                //incrementiamo softblocked se è un semAdd di device
+                if(check_dev_semAdd(temp) == TRUE){ softB_count = softB_count + 1;}
                 if(insertBlocked(temp, current_proc) == TRUE){ PANIC(); }
                 scheduler();
             }          
-
+     
         }else if (current_a0 == 4){
             //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
             if (current_proc->p_s.gpr[4] == NULL){ SYSCALL(TERMPROCESS, 0, 0, 0); }
@@ -143,18 +151,25 @@ void SYS_handler(){
             *temp = *temp + 1;
 
             if(*temp - 1 < 0){
-                //se ora c'è una risorsa disponibile
+                //ora c'è una risorsa disponibile
                 pcb_PTR newpcb = removeBlocked(temp);
-                insertProcQ(&readyQ, newpcb);
+                if (newpcb != NULL){ 
+                    //se è andato tutto bene, quindi removeBlocked ha restituito un pcb, lo inserisco nella readyQ
+                    insertProcQ(&readyQ, newpcb); 
 
-                //se era un semaforo dei device devo diminuire soft blocked
-                for(int i=0; i<DEVARRSIZE; i = i+1){
-                    if (temp == device[i]->s_semAdd){ 
-                        softB_count = softB_count - 1; 
-                        break;
+                    if(check_dev_semAdd(temp) == TRUE){
+                        //se è un semaforo device
+                        if (headBlocked(temp) == NULL){
+                            /*  se è NULL significa che il semaforo 'temp' non è più attivo e quindi il suo 
+                                relativo campo in device[] va settato a NULL    */
+                            device[find_dev_index(temp)] = NULL;
+                        }
+                        //siccome il pcb era bloccato ad un semaforo dei device devo diminuire soft blocked
+                        softB_count = softB_count - 1;
                     }
                 }
             }
+
             //INCREMENTIAMO IL PC 
             current_proc->p_s.pc_epc = current_proc->p_s.pc_epc + 4; 
 
@@ -196,7 +211,7 @@ void SYS_handler(){
             }
             
             //faccio P operation sul semaforo
-            SYSCALL(PASSEREN, (int) device[dev_pos]->s_semAdd, 0, 0);
+            SYSCALL(PASSEREN, device[dev_pos]->s_semAdd, 0, 0);
 
         }else if (current_a0 == 6){
             //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
@@ -218,7 +233,7 @@ void SYS_handler(){
             }
             
             //faccio P operation sul semaforo
-            SYSCALL(PASSEREN, (int) device[48]->s_semAdd, 0, 0);
+            SYSCALL(PASSEREN, device[48]->s_semAdd, 0, 0);
 
         }else if (current_a0 == 8){
             //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
@@ -272,13 +287,20 @@ int interrupt_handler(){
         //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
         //PLT interrupt handler
         numLine = 1;
+
         //carica 5 millisecondi in PLT
         unsigned int tmp = STCK(tmp);
         current_proc->p_s.gpr[1] = current_proc->p_time + tmp;
         setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
+
+        //salvo lo stato 
         state_t* state_register = (state_t*) BIOSDATAPAGE;
         current_proc->p_s = *state_register;
+
+        //inserisco il pcb nella redayQ
         insertProcQ(&readyQ, current_proc);
+
+        //passo il controllo allo scheduler
         scheduler();
 
     }else{
@@ -292,9 +314,11 @@ int interrupt_handler(){
             
             while (emptyProcQ(device[48]->s_procQ) != 1){
                 //finchè non ho svuotato la coda dei processi bloccati all' interval timer
+                //aggiungo una risorsa al semaforo corrispondente
                 *(device[48]->s_semAdd) = *(device[48]->s_semAdd)  + 1;
+
                 if(*(device[48]->s_semAdd)  - 1 < 0){
-                    //se ora c'è una risorsa disponibile
+                    //se ora c'è una risorsa disponibile la uso, quindi riesumo un pcb e lo metto nella readyQ
                     pcb_PTR newpcb = removeBlocked(device[48]->s_semAdd);
                     insertProcQ(&readyQ, newpcb);
                     //diminuisco soft blocked

@@ -41,6 +41,7 @@ int main()
     
     // inizializzo il primo processo
     pcb_PTR p = allocPcb();
+    proc_count = 1;
     p->p_s.status = STATE_INIT; 
     p->p_time = 0;
     p->p_s.pc_epc = (unsigned int) (memaddr) test; // PC set to the address of test()
