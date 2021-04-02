@@ -1,44 +1,10 @@
 #include "asl.h"
 
 #define MAXINT 0xFFFFFFFF
-#define DEFAULT_RESOURCE 0
 
 static semd_t semd_table[MAXPROC+2];
 static semd_PTR semdFree_h;
 static semd_PTR semd_h;
-
-semd_PTR allocSemd() {
-    if (semdFree_h == NULL){return NULL;} // se non ci sono più semafori allocabili return NULL
-
-    int allocated = 0;
-    semd_PTR newsemd = semdFree_h;
-    semdFree_h = semdFree_h->s_next;
-
-    //inizializzo campi newsemd
-    newsemd->s_semAdd = (int*) DEFAULT_RESOURCE; //setto una sola risorsa 
-    newsemd->s_procQ = mkEmptyProcQ();
-
-    //trovo dove metterlo nella ASL, dove mettere un semd da 1 risorsa
-    semd_PTR temp = semd_h;
-    
-    newsemd->s_next = semd_h->s_next;
-    semd_h->s_next = newsemd;
-
-/*
-    while (temp->s_semAdd != (int*)MAXINT && allocated == 0){
-        if (temp->s_next->s_semAdd == (int*) MAXINT){
-
-            newsemd->s_next = temp->s_next;
-            temp->s_next = newsemd;
-            allocated = 1;
-        }
-        temp = temp->s_next;
-    }
-*/
-    //esce quando il semaforo è stato allocato 
-
-    return newsemd;
-}
 
 /*Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
  * alloca un nuovo SEMD dalla lista di quelli liberi (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna (i.e.
