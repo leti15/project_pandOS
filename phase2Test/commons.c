@@ -1,8 +1,5 @@
 #include "commons.h"
-#ifndef __SIZE_TYPE__
-#define __SIZE_TYPE__ long unsigned int
-#endif
-typedef __SIZE_TYPE__ size_t;
+
 
 void breakPoint(){}
 void breakPoint2(){}
@@ -20,6 +17,7 @@ void syspasse(){}
 void sysPLT(){}
 void sysIT(){}
 void sysDEV(){}
+void sysSCHEDULER(){}
 
 void * memcpy (void *dest, const void *src, size_t len)
 {
@@ -31,21 +29,20 @@ void * memcpy (void *dest, const void *src, size_t len)
 }
 
 void remove_from_arrayDev( int* semAdd){
-    for (int i = 0; i < DEVARRSIZE; i = i+1){
-        if (device[i]->s_semAdd == semAdd){
-            device[i] = NULL;
-            break;
-        }
-    }
+
+    int i = find_dev_index(semAdd);
+    device[i]->s_semAdd = NULL;
+    device[i] = NULL;
 }
 
 void init_devices() {
-    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = ((void *)0xFFFFFFFF); }
+    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = NULL; }
 }
 
 int check_dev_installation( int numLine, int numDev){
     unsigned int x, mask; 
-    unsigned int* base_line;
+    unsigned int* base_line = 0x1000002C;
+    
     if (numLine == 4){ base_line = 0x1000002C + 0x04;}
     if (numLine == 5){ base_line = 0x1000002C + 0x08;}
     if (numLine == 6){ base_line = 0x1000002C + 0x0C;}
@@ -55,14 +52,15 @@ int check_dev_installation( int numLine, int numDev){
     //mask = 2^numDev
     mask = 1;
     for (int i=0; i< numDev; i = i+1){ mask = mask*2; }
-    if ( ((x & mask) >> numDev) > 0){ sys7(); return TRUE; } 
+    if ( ((x & mask) >> numDev) > 0){ return TRUE; } 
     else { return FALSE; }
 }
 
 int check_dev_interruption( int numLine, int numDev){
 
     unsigned int x, mask; 
-    unsigned int* base_line;
+    unsigned int* base_line = 0x10000040;
+
     if (numLine == 4){ base_line = 0x10000040 + 0x04;}
     if (numLine == 5){ base_line = 0x10000040 + 0x08;}
     if (numLine == 6){ base_line = 0x10000040 + 0x0C;}
@@ -79,17 +77,17 @@ int check_dev_interruption( int numLine, int numDev){
 
 int check_dev_semAdd(int* semAdd){
     for (int i=0; i<DEVARRSIZE; i = i+1){
-        if (device[i]->s_semAdd == semAdd){
-            return TRUE;
-        }
+        if (device[i] != NULL)
+            if (device[i]->s_semAdd == semAdd){return TRUE;}
     }
     return FALSE;
 }
 
 int find_dev_index(int* semAdd){
     for (int i=0; i<DEVARRSIZE; i = i+1){
-        if (device[i]->s_semAdd == semAdd){
-            return i;
-        }
+        if (device[i] != NULL)
+            if (device[i]->s_semAdd == semAdd){
+                return i;
+            }
     }
 }

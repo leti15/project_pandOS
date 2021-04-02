@@ -1,6 +1,7 @@
 #include "asl.h"
 
 #define MAXINT 0xFFFFFFFF
+#define DEFAULT_RESOURCE 0
 
 static semd_t semd_table[MAXPROC+2];
 static semd_PTR semdFree_h;
@@ -14,12 +15,16 @@ semd_PTR allocSemd() {
     semdFree_h = semdFree_h->s_next;
 
     //inizializzo campi newsemd
-    newsemd->s_semAdd = (int*) 0; //setto una sola risorsa 
+    newsemd->s_semAdd = (int*) DEFAULT_RESOURCE; //setto una sola risorsa 
     newsemd->s_procQ = mkEmptyProcQ();
 
     //trovo dove metterlo nella ASL, dove mettere un semd da 1 risorsa
     semd_PTR temp = semd_h;
     
+    newsemd->s_next = semd_h->s_next;
+    semd_h->s_next = newsemd;
+
+/*
     while (temp->s_semAdd != (int*)MAXINT && allocated == 0){
         if (temp->s_next->s_semAdd == (int*) MAXINT){
 
@@ -29,6 +34,7 @@ semd_PTR allocSemd() {
         }
         temp = temp->s_next;
     }
+*/
     //esce quando il semaforo è stato allocato 
 
     return newsemd;
@@ -43,13 +49,6 @@ int insertBlocked(int *semAdd, pcb_t *p){
 
     if (semAdd != NULL && p != NULL)
     {
-
-        if (semdFree_h == NULL)
-        {//se la lista dei semafori attivi è piena (ovvero lista semafori liberi vuota)
-            return 1;
-        }else
-        {//se la lista sei semafori attivi contiene almeno un elemento ma non è piena
-
             //cerco il semaforo nella lista dei semafori allocati
             while(tmp != NULL)
             {
@@ -58,11 +57,14 @@ int insertBlocked(int *semAdd, pcb_t *p){
                     p->p_semAdd = semAdd;   //se ho trovato il semaforo, lo aggiungo alla sua coda
                     insertProcQ(&(tmp->s_procQ), p);
                     return 0;
-                } else if (tmp->s_next->s_semAdd > semAdd || tmp->s_next->s_semAdd == (int*)MAXINT) //se il semaforo dopo e' maggiore oppure se e' l'ultimo
+                }else if (tmp->s_next->s_semAdd > semAdd || tmp->s_next->s_semAdd == (int*)MAXINT) //se il semaforo dopo e' maggiore oppure se e' l'ultimo
                 {
                     //se non ho trovato il semaforo tra i semafori allocati allora aggiungo un semaforo
                     //alloco un nuovo semaforo
 
+                    //se la lista dei semafori attivi è piena (ovvero lista semafori liberi vuota)
+                    if (semdFree_h == NULL){return 1;}
+        
                     semd_PTR sem_to_add = semdFree_h;
                     semdFree_h = semdFree_h->s_next;
 
@@ -77,11 +79,10 @@ int insertBlocked(int *semAdd, pcb_t *p){
 
                     insertProcQ(&(sem_to_add->s_procQ), p);
 
-                    return 0;
+                    return (sem_to_add);
                 }
                 tmp = tmp->s_next;
             }
-        }
 
     }else return 0;
 }

@@ -7,12 +7,15 @@
 #include "commons.h"
 #include "scheduler.h"
 
+extern int resource_dev;
+extern int resource_it;
+
 void fooBar();
 void SYS_handler();
 int interrupt_handler();
 void sys_terminate ();
 void sys_p (int* temp);
-void sys_v (int* temp);
+void* sys_v (int* temp);
 void PassUpOrDie(int EXCEPT);
 
 #endif /* !defined(EXCEPTIONS_HANDLER_H) */

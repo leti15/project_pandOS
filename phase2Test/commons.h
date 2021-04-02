@@ -3,6 +3,13 @@
 //#include <stddef.h>
 #include "pandos_types.h"
 
+#ifndef __SIZE_TYPE__
+#define __SIZE_TYPE__ long unsigned int
+#endif
+typedef __SIZE_TYPE__ size_t;
+
+#define DEFAULT_RESOURCE 0
+
 #define STATE_INIT 0b00011000000000001111111100000100
 #define STATE_WAIT 0b00010000000000001111111100000001
 
@@ -49,7 +56,7 @@ extern passupvector_t* PUV;
  * 48: DEVICE INTERVAL TIMER
  * 49: DEVICE PLT
 */
-extern semd_t* device[DEVARRSIZE]; 
+extern semd_PTR device[DEVARRSIZE]; 
 
 void breakPoint();
 void breakPoint2();
@@ -67,8 +74,9 @@ void syspasse();
 void sysPLT();
 void sysIT();
 void sysDEV();
+void sysSCHEDULER();
 
-void * memcpy (void *dest, const void *src, unsigned long len);
+void * memcpy (void *dest, const void *src, size_t len);
 void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);

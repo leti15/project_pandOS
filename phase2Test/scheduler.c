@@ -6,7 +6,7 @@
 #include "scheduler.h"
 
 void scheduler()
-{   
+{   sysSCHEDULER();
 
     //in base a com'è la readyQ ci comportiamo in modo diverso
     if (emptyProcQ(readyQ) == 1)//se la readyQ è vuota
