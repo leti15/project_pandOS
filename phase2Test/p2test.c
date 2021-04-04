@@ -113,18 +113,19 @@ extern void p5mm ();
 
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
-
+	breakPoint();
 	char *s = msg;
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
+	breakPoint2();
 	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
+	breakPoint3();
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		
+		breakPoint();
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
-		sys8();
+
 		if ((status & TERMSTATMASK) != RECVD)
-			sys7();
 			PANIC();
 		s++;	
 	}

@@ -15,7 +15,7 @@ void SYS_handler();
 int interrupt_handler();
 void sys_terminate ();
 void sys_p (int* temp);
-void* sys_v (int* temp);
+pcb_PTR sys_v (int* temp);
 void PassUpOrDie(int EXCEPT);
 
 #endif /* !defined(EXCEPTIONS_HANDLER_H) */

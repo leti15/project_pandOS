@@ -28,15 +28,10 @@ void * memcpy (void *dest, const void *src, size_t len)
   return dest;
 }
 
-void remove_from_arrayDev( int* semAdd){
-
-    int i = find_dev_index(semAdd);
-    device[i]->s_semAdd = NULL;
-    device[i] = NULL;
-}
-
 void init_devices() {
-    for (int i = 0; i < DEVARRSIZE; i = i + 1) { device[i] = NULL; }
+    for (int i = 0; i < DEVARRSIZE; i = i + 1) { 
+        devicesem[i] = 0;
+    }
 }
 
 int check_dev_installation( int numLine, int numDev){
@@ -76,18 +71,5 @@ int check_dev_interruption( int numLine, int numDev){
 }
 
 int check_dev_semAdd(int* semAdd){
-    for (int i=0; i<DEVARRSIZE; i = i+1){
-        if (device[i] != NULL)
-            if (device[i]->s_semAdd == semAdd){return TRUE;}
-    }
-    return FALSE;
-}
-
-int find_dev_index(int* semAdd){
-    for (int i=0; i<DEVARRSIZE; i = i+1){
-        if (device[i] != NULL)
-            if (device[i]->s_semAdd == semAdd){
-                return i;
-            }
-    }
+    return (semAdd >= &devicesem[0] && semAdd <= &devicesem[DEVARRSIZE-1]);
 }

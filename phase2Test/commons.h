@@ -13,7 +13,7 @@ typedef __SIZE_TYPE__ size_t;
 #define STATE_INIT 0b00011000000000001111111100000100
 #define STATE_WAIT 0b00010000000000001111111100000001
 
-#define DEVARRSIZE 50 //grandezza array dei semafori dei device
+#define DEVARRSIZE 49 //grandezza array dei semafori dei device
 
 //macro to find old kernel/user mode
 #define STATUSO_MODE_MASK 0b00000000000000000000000000100000
@@ -39,6 +39,7 @@ typedef __SIZE_TYPE__ size_t;
 #define EXC_MASK 0b00000000000000000000000001111100
 #define CAUSE_GET_EXCCODE(x)    (((x) & EXC_MASK) >> 2)
 
+extern int devicesem[DEVARRSIZE];
 extern int proc_count;
 extern int softB_count;
 extern pcb_PTR readyQ;
@@ -56,7 +57,6 @@ extern passupvector_t* PUV;
  * 48: DEVICE INTERVAL TIMER
  * 49: DEVICE PLT
 */
-extern semd_PTR device[DEVARRSIZE]; 
 
 void breakPoint();
 void breakPoint2();
@@ -77,11 +77,9 @@ void sysDEV();
 void sysSCHEDULER();
 
 void * memcpy (void *dest, const void *src, size_t len);
-void remove_from_arrayDev( int* semAdd);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
-int find_dev_index(int* semAdd);
 
 #endif /* !defined(COMMONS_H) */

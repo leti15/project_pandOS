@@ -12,14 +12,12 @@ extern void uTLB_RefillHandler();
 
 extern void fooBar();
 extern void test(); 
-int resource_dev = -1;
-int resource_it = -1;
+int devicesem[DEVARRSIZE];
 int proc_count;
 int softB_count;
 pcb_PTR readyQ;
 pcb_PTR current_proc;
 passupvector_t* PUV;
-semd_PTR device[DEVARRSIZE];
 // puntatore alla coda dei semafori attivi 'semd_h'
 
 int main()

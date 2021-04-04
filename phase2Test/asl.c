@@ -1,10 +1,14 @@
 #include "asl.h"
 
-#define MAXINT 0xFFFFFFFF
+#define MAXINT 0xFFFFFFFE
 
 static semd_t semd_table[MAXPROC+2];
 static semd_PTR semdFree_h;
 static semd_PTR semd_h;
+
+semd_PTR headASL(){
+    return semd_h->s_next;
+}
 
 /*Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è presente nella ASL,
  * alloca un nuovo SEMD dalla lista di quelli liberi (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna (i.e.
@@ -75,11 +79,11 @@ pcb_t* removeBlocked(int *semAdd)
                 elem_toremove = removeProcQ(&(tmp->s_procQ));
 
                 //controllo se dopo la rimozione il semaforo e' vuoto
-                if (emptyProcQ(tmp->s_procQ))
+                if (emptyProcQ(tmp->s_procQ) ) //device[48] != tmp
                 {
-                    //lo rimuovo dalla ASL e dall' array dei device
-                    remove_from_arrayDev(tmp->s_semAdd);
+                    //lo rimuovo dalla ASL 
                     old_tmp->s_next = tmp->s_next;
+                    tmp->s_semAdd = NULL;
                     tmp->s_next = semdFree_h;
                     semdFree_h = tmp;
                 }
@@ -116,14 +120,13 @@ pcb_t* outBlocked(pcb_t *p){
                 {
                     elem_toremove = outProcQ( &(tmp->s_procQ), p );
 
-                    if(emptyProcQ(tmp->s_procQ))
+                    if(emptyProcQ(tmp->s_procQ) )//device[48] != tmp 
                     {   //se c'è un solo processo nella coda del semaforo lo rimuovo dalla ASL
                         old_tmp->s_next = tmp->s_next;
+                        tmp->s_semAdd = NULL;
                         tmp->s_next = semdFree_h;
                         semdFree_h = tmp;
                         
-                        //e lo rimuovo dall'array dei device
-                        remove_from_arrayDev(tmp->s_semAdd);
                     }
                     return elem_toremove;
                 }
@@ -138,7 +141,7 @@ pcb_t* outBlocked(pcb_t *p){
     } else return NULL;
 }
 
-/*Restituisce (senza rimuovere) il puntatore al PCB che si trova in testa alla coda dei processiassociata al SEMD con chiave semAdd. Ritorna NULL se il SEMD non compare nella ASL oppure
+/*Restituisce (senza rimuovere) il puntatore al PCB che si trova in testa alla coda dei processi associata al SEMD con chiave semAdd. Ritorna NULL se il SEMD non compare nella ASL oppure
 se compare ma la sua coda dei processi è vuota.*/
 pcb_t* headBlocked(int *semAdd)
 {
@@ -150,7 +153,7 @@ pcb_t* headBlocked(int *semAdd)
         {
             if(tmp->s_semAdd == semAdd)
             {
-                return (tmp->s_procQ->p_next);
+                return headProcQ(& (tmp->s_procQ) );
             }
             tmp = tmp->s_next;
         }
