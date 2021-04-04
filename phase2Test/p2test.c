@@ -122,8 +122,9 @@ void print(char *msg) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
 		
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
-		syspasse();
+		sys8();
 		if ((status & TERMSTATMASK) != RECVD)
+			sys7();
 			PANIC();
 		s++;	
 	}
