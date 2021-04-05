@@ -14,6 +14,7 @@ void fooBar();
 void SYS_handler();
 int interrupt_handler();
 void sys_terminate ();
+void sys_t(pcb_PTR proc);
 void sys_p (int* temp);
 pcb_PTR sys_v (int* temp);
 void PassUpOrDie(int EXCEPT);

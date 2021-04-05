@@ -113,16 +113,12 @@ extern void p5mm ();
 
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
-	breakPoint();
 	char *s = msg;
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
-	breakPoint2();
 	SYSCALL(PASSERN, (int)&term_mut, 0, 0);				/* P(term_mut) */
-	breakPoint3();
 	while (*s != EOS) {
 		*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
-		breakPoint();
 		status = SYSCALL(WAITIO, TERMINT, 0, 0);	
 
 		if ((status & TERMSTATMASK) != RECVD)
@@ -153,7 +149,7 @@ void test() {
 
 	SYSCALL(VERHOGEN, (int)&testsem, 0, 0);					/* V(testsem)   */
 	
-	print("\np1 v(testsem)\n");
+	print("p1 v(testsem)\n");
 
 	/* set up states of the other processes */
 
@@ -260,7 +256,7 @@ void test() {
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = p5Stack;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPBITON | CAUSEINTMASK | TEBITON;
 	pFiveSupport.sup_exceptContext[PGFAULTEXCEPT].c_pc =  (memaddr) p5mm;
-	
+
 	SYSCALL(CREATETHREAD, (int)&p5state, (int) &(pFiveSupport), 0); 	/* start p5     */
 
 	SYSCALL(CREATETHREAD, (int)&p6state, (int) NULL, 0);				/* start p6		*/
@@ -272,7 +268,7 @@ void test() {
 	print("p1 knows p5 ended\n");
 
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);								/* P(blkp4)		*/
-
+	breakPoint();
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
 		creation = SYSCALL(CREATETHREAD, (int)&p8rootstate, (int) NULL, 0);
@@ -361,7 +357,6 @@ void p3() {
 
 	time1 = 0;
 	time2 = 0;
-
 	/* loop until we are delayed at least half of clock V interval */
 	while (time2-time1 < (CLOCKINTERVAL >> 1) )  {
 		STCK(time1);			/* time of day     */
@@ -613,12 +608,13 @@ void p8root() {
 
 void child1() {
 	print("child1 starts\n");
-	
+	breakPoint();
 	SYSCALL(CREATETHREAD, (int)&gchild1state, (int) NULL, 0);
-	
+	breakPoint();
 	SYSCALL(CREATETHREAD, (int)&gchild2state, (int) NULL, 0);
-
+	breakPoint();
 	SYSCALL(PASSERN, (int)&blkp8, 0, 0);
+	breakPoint();
 }
 
 void child2() {

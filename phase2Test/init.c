@@ -13,6 +13,7 @@ extern void uTLB_RefillHandler();
 extern void fooBar();
 extern void test(); 
 int devicesem[DEVARRSIZE];
+int count_time;
 int proc_count;
 int softB_count;
 pcb_PTR readyQ;

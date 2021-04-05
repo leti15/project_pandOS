@@ -18,12 +18,17 @@ void scheduler()
             setSTATUS(STATE_WAIT);
             WAIT();
         }
-        if (proc_count > 0 && softB_count == 0){ PANIC(); }
+        if (proc_count > 0 && softB_count == 0){
+            breakPoint3();
+             PANIC(); }
     }else{
         
         //carica 5 millisecondi in PLT
         setTIMER(5000 *(*((cpu_t *) TIMESCALEADDR)));
-        *((int*)TODLOADDR) = 0;
+
+        //INCREMENTIAMO IL CPU TIME
+        STCK(count_time);
+
         LDST( (state_t*) &(current_proc->p_s));
     }
 
