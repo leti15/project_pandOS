@@ -1,0 +1,3 @@
+- Letizia Gorini 0000924219
+- Gerald Manzano 0000923278
+- Leon Pirazzoli 0000923374
