@@ -34,8 +34,8 @@ Quando il controller di un device causa un interrupt, significa che ha completat
 Le richieste vengono effettuate attraverso la SYSCALL5 (WaitforIO) che blocca il processo corrente al semaforo relativo al device effettuando una P-operation.
 Abbiamo scelto di tracciare i semafori associati ai device utilizzando un array di interi (devicesem[DEVARRAYSIZE]) che rappresentano il numero di risorse (il semadd dei semafori). 
 Il device numero x con numero di linea y corrisponde al semaforo:
- ** devicesem[(y-3)*8+x] **
-\nInfine il 49esimo semaforo e' riservato all'Interval Timer.
+ devicesem[(y-3)*8+x] 
+Infine il 49esimo semaforo e' riservato all'Interval Timer.
 La scelta di utilizzare un array di interi e' dovuta al fatto di avere locazioni di memoria contigue che ci permettono di capire se un semaforo e' associato a un device controllando se il suo indirizzo e' nel range [&devicesem[0], &devicesem[DEVARRAYSIZE]].
 In questo modo possiamo tenere traccia dei processi soft-blocked, sia quelli che attendono che scatti l'Interval Timer, sia quelli che attendono una risposta da un device, in modo efficiente.
 
