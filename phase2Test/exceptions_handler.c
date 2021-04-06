@@ -56,18 +56,23 @@ void SYS_handler()
         int current_a0 = state_reg->reg_a0;
         if (current_a0 == 1) //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
         {
-            sys1();
-            if(state_reg->reg_a1 == NULL){sys_terminate();}
+            if(state_reg->reg_a1 == (int)NULL){sys_terminate();}
             pcb_PTR newProc = allocPcb(); //creo la stuttura per il nuovo processo
 
             if (newProc == NULL) { state_reg->reg_v0 = -1; } //non ci sono pcb liberi= mancanza risorse
             else{
                 //setto campi del nuovo pcb
+                
                 insertChild(current_proc, newProc);
+
                 newProc->p_time = 0;
+                
                 newProc->p_supportStruct = (support_t *)state_reg->gpr[5];
+
                 state_t *temp = (state_t *)state_reg->gpr[4];
+                
                 newProc->p_s = *temp;
+                
                 newProc->p_semAdd = NULL;
                 
                 insertProcQ(&readyQ, newProc); //loinserisco nella readyQ
@@ -75,24 +80,24 @@ void SYS_handler()
                 state_reg->reg_v0 = 0;
 
                 proc_count = proc_count + 1; //incremento il contatore dei processi attivi
+            
+            
             }
 
             LDST(state_reg);
         }
         else if (current_a0 == 2) //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
         {
-            sys2();
+
             sys_terminate();
         }
         else if (current_a0 == 3) //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
         {
-            sys3();
-            sys_p(state_reg->reg_a1);
+            sys_p((int *)state_reg->reg_a1);
         }
         else if (current_a0 == 4) //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
         {
-            sys4();
-            pcb_PTR temp = sys_v(state_reg->reg_a1);
+            pcb_PTR temp = sys_v((int *)state_reg->reg_a1);
 
             LDST(state_reg);
         }
@@ -109,8 +114,7 @@ void SYS_handler()
              * 48: DEVICE INTERVAL TIMER
              * 
             */
-            sys5();
-            if (state_reg->reg_a1 == NULL || state_reg->reg_a2 == NULL) { sys_terminate(); }
+            if (state_reg->reg_a1 == (int)NULL || state_reg->reg_a2 == (int)NULL) { sys_terminate(); }
 
             int intlNo = state_reg->reg_a1, dnum = state_reg->reg_a2;
             int dev_pos = (intlNo - 3) * 8 + dnum;
@@ -124,7 +128,6 @@ void SYS_handler()
         }
         else if (current_a0 == 6) //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
         {
-            //sys6();
 
             //AGGIORNIAMO CPU TIME
             unsigned int tmp = STCK(tmp);
@@ -134,7 +137,6 @@ void SYS_handler()
         }
         else if (current_a0 == 7) //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
         {
-            sys7();
 
             //incrementiamo softblocked se è un semAdd di device
             softB_count = softB_count + 1;
@@ -154,7 +156,6 @@ void SYS_handler()
         }
         else if (current_a0 == 8) //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
         {
-            sys8();
 
             state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
             LDST(state_reg);
@@ -184,7 +185,6 @@ int interrupt_handler()
 
         if (IP % 2 != 0) //PLT interrupt handler
         {
-            sysPLT();
             //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  1
             numLine = 1;
 
@@ -208,7 +208,6 @@ int interrupt_handler()
         IP = IP >> 1;
         if (IP % 2 != 0) //INTERVAL TIMER interrupt handler
         {
-            sysIT();
             //è acceso l'ultmo bit quindi c'è un interrupt pendente sulla linea  2
             numLine = 2;
             LDIT(100000); // setto interval timer di 100 millisecondi (=100000 microsecondi)
@@ -224,7 +223,6 @@ int interrupt_handler()
                     devicesem[48] =  devicesem[48] + 1;
                 }
             }
-            if( devicesem[48] == 0){sys1();}
             devicesem[48] = 0;
                   
             if (current_proc == NULL){ scheduler(); }
@@ -236,7 +234,6 @@ int interrupt_handler()
         numLine = 3;
         while (IP != 0 && numLine <= 7) //DEVICE INTERRUPT handler
         {
-            sysDEV();
             //ci sono device interrupts
             while (IP % 2 == 0)
             {
@@ -265,7 +262,7 @@ int interrupt_handler()
 
             unsigned int mask, device_status, base_device_reg;
             //troviamo la base del device register
-            devreg_t *reg = GET_devAddrBase(numLine, numDev);
+            devreg_t *reg = (devreg_t *)GET_devAddrBase(numLine, numDev);
             int position = (numLine - 3) * 8 + numDev;
 
             if (numLine == 7)
@@ -342,70 +339,20 @@ int interrupt_handler()
             else{ LDST((state_t*)BIOSDATAPAGE); }
         }
     }
-}
 
-/*
+}
 void sys_terminate(){
 
     sys_t(current_proc);
     scheduler();
 }
-*/
-
-
-void sys_terminate()
-{
-    sys2();
-    pcb_PTR tempQueue = mkEmptyProcQ(); //frangia dei pcb non ancora terminati
-    pcb_PTR temp = current_proc;
-    outChild(current_proc);
-    insertProcQ(&tempQueue, current_proc);
-    //emptyChild == 1 se NON ha figli
-
-    while (emptyProcQ(tempQueue) != 1) //finchè non è vuota continuo
-    {
-        pcb_PTR to_terminate = removeProcQ(&tempQueue);
-
-        while (emptyChild(to_terminate) != 1)
-        { //se ha figli
-            pcb_PTR child_toRemove = removeChild(to_terminate);
-            insertProcQ(&tempQueue, child_toRemove);
-        }
-
-        //a questo punto 'to_terminate' non avrà più figli e lo posso terminare
-        int* temp = to_terminate->p_semAdd;
-
-        //se è bloccato ad un semaforo 
-        if(temp != NULL ){
-            if(outBlocked(to_terminate) == NULL){
-                breakPoint3();
-                 PANIC(); } //se outblocked va in condizione di errore --> panic
-            else{
-                //se era un device
-                if (check_dev_semAdd(temp)){    softB_count = softB_count -1;    }
-                else{ *(temp)= *(temp) + 1; }
-            }
-        }else{
-            //se non è bloccato ad un semaforo è nella readyQ
-            outProcQ(&readyQ, to_terminate);
-        }
-
-        freePcb(to_terminate);
-        proc_count = proc_count - 1;
-
-    }
-
-    //chiamimamo lo scheduler
-    scheduler();
-}
-
 
 void sys_t(pcb_PTR proc){
     if (proc != NULL){
         outChild(proc);
         while(!emptyChild(proc))
         {
-            sys_terminate(removeChild(proc));
+            sys_t(removeChild(proc));
         }
         if(proc->p_semAdd == NULL){outProcQ(&readyQ, proc);}
         else{
@@ -424,12 +371,10 @@ void sys_t(pcb_PTR proc){
 
 void sys_p(int *temp)
 {
-    syspasse();
     if (temp == NULL) { sys_terminate(); }
     else{
         
         *temp = *temp - 1; //decremento risorse
-        if(softB_count == 0){sys6();}
         if (*(temp) < 0)
         {
             //aggiorno stato  
@@ -451,7 +396,6 @@ void sys_p(int *temp)
 
 pcb_PTR sys_v(int *temp)
 {
-    sysverog();
     if (temp == NULL) { sys_terminate(); }
     else {
         pcb_PTR newpcb;
@@ -484,7 +428,6 @@ void PassUpOrDie(int EXCEPT)
 {
     if (current_proc->p_supportStruct == NULL) { sys_terminate(); }
     else{
-        breakPoint2();
         current_proc->p_supportStruct->sup_exceptState[EXCEPT] = *((state_t*)BIOSDATAPAGE);
         unsigned int sp = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].c_stackPtr;
         unsigned int status = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].c_status;

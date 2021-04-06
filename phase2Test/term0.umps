@@ -27,3 +27,24 @@ leaf process starts
 leaf process starts
 p8root starts
 child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p1 finishes OK -- TTFN
+System halted 

@@ -59,24 +59,6 @@ extern passupvector_t* PUV;
  * 49: DEVICE PLT
 */
 
-void breakPoint();
-void breakPoint2();
-void breakPoint3();
-void sys1();
-void sys2();
-void sys3();
-void sys4();
-void sys5();
-void sys6();
-void sys7();
-void sys8();
-void sysverog();
-void syspasse();
-void sysPLT();
-void sysIT();
-void sysDEV();
-void sysSCHEDULER();
-
 void * memcpy (void *dest, const void *src, size_t len);
 void init_devices();
 int check_dev_installation( int numLine, int numDev);

@@ -268,7 +268,6 @@ void test() {
 	print("p1 knows p5 ended\n");
 
 	SYSCALL(PASSERN, (int)&blkp4, 0, 0);								/* P(blkp4)		*/
-	breakPoint();
 	/* now for a more rigorous check of process termination */
 	for (p8inc=0; p8inc<4; p8inc++) {
 		creation = SYSCALL(CREATETHREAD, (int)&p8rootstate, (int) NULL, 0);
@@ -608,13 +607,9 @@ void p8root() {
 
 void child1() {
 	print("child1 starts\n");
-	breakPoint();
 	SYSCALL(CREATETHREAD, (int)&gchild1state, (int) NULL, 0);
-	breakPoint();
 	SYSCALL(CREATETHREAD, (int)&gchild2state, (int) NULL, 0);
-	breakPoint();
 	SYSCALL(PASSERN, (int)&blkp8, 0, 0);
-	breakPoint();
 }
 
 void child2() {

@@ -1,24 +1,5 @@
 #include "commons.h"
 
-
-void breakPoint(){}
-void breakPoint2(){}
-void breakPoint3(){}
-void sys1(){}
-void sys2(){}
-void sys3(){}
-void sys4(){}
-void sys5(){}
-void sys6(){}
-void sys7(){}
-void sys8(){}
-void sysverog(){}
-void syspasse(){}
-void sysPLT(){}
-void sysIT(){}
-void sysDEV(){}
-void sysSCHEDULER(){}
-
 void * memcpy (void *dest, const void *src, size_t len)
 {
   char *d = dest;
@@ -36,12 +17,12 @@ void init_devices() {
 
 int check_dev_installation( int numLine, int numDev){
     unsigned int x, mask; 
-    unsigned int* base_line = 0x1000002C;
+    unsigned int* base_line = (unsigned int *)(0x1000002C);
     
-    if (numLine == 4){ base_line = 0x1000002C + 0x04;}
-    if (numLine == 5){ base_line = 0x1000002C + 0x08;}
-    if (numLine == 6){ base_line = 0x1000002C + 0x0C;}
-    if (numLine == 7){ base_line = 0x1000002C + 0X10;}
+    if (numLine == 4){ base_line = (unsigned int *)(0x1000002C + 0x04);}
+    if (numLine == 5){ base_line = (unsigned int *)(0x1000002C + 0x08);}
+    if (numLine == 6){ base_line = (unsigned int *)(0x1000002C + 0x0C);}
+    if (numLine == 7){ base_line = (unsigned int *)(0x1000002C + 0X10);}
     x = *base_line;
     
     //mask = 2^numDev
@@ -54,12 +35,12 @@ int check_dev_installation( int numLine, int numDev){
 int check_dev_interruption( int numLine, int numDev){
 
     unsigned int x, mask; 
-    unsigned int* base_line = 0x10000040;
+    unsigned int* base_line = (unsigned int *)(0x10000040);
 
-    if (numLine == 4){ base_line = 0x10000040 + 0x04;}
-    if (numLine == 5){ base_line = 0x10000040 + 0x08;}
-    if (numLine == 6){ base_line = 0x10000040 + 0x0C;}
-    if (numLine == 7){ base_line = 0x10000040 + 0X10;}
+    if (numLine == 4){ base_line = (unsigned int *)(0x10000040 + 0x04);}
+    if (numLine == 5){ base_line = (unsigned int *)(0x10000040 + 0x08);}
+    if (numLine == 6){ base_line = (unsigned int *)(0x10000040 + 0x0C);}
+    if (numLine == 7){ base_line = (unsigned int *)(0x10000040 + 0X10);}
     x = *base_line;
     
     //mask = 2^numDev

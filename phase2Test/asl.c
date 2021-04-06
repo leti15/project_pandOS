@@ -49,7 +49,7 @@ int insertBlocked(int *semAdd, pcb_t *p){
 
                     insertProcQ(&(sem_to_add->s_procQ), p);
 
-                    return (sem_to_add);
+                    return ((int)sem_to_add);
                 }
                 tmp = tmp->s_next;
             }

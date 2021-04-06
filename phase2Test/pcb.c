@@ -93,6 +93,7 @@ int emptyProcQ(pcb_t* tp) {
  * La doppia indirezione su tp serve per poter inserire p come ultimo elemento della coda.*/
 void insertProcQ(pcb_t** tp, pcb_t* p){
     if (tp != NULL && p != NULL){
+        //breakPoint2();
         pcb_PTR sent = *tp;
 
         if (sent != NULL){//coda NON vuota
@@ -217,23 +218,24 @@ void insertChild(pcb_t *prnt, pcb_t *p)
         {
 
             //troviamo il ptb esistente che punter� al nuovo ptb
+            
             pcb_PTR last = prnt->p_child->p_prev_sib;
-
             //l'ultimo figlio punta al nuovo figlio
             last->p_next_sib = p;
+            
             p->p_prev_sib = last;
             p->p_prnt = prnt;
             p->p_next_sib = prnt->p_child;
             prnt->p_child->p_prev_sib = p;
-
+           
         }else{
             prnt->p_child = p;
             p->p_prnt = prnt;
-
             p->p_prev_sib = p;
             p->p_next_sib = p;
         }
     }
+
 }
 
 /*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/
@@ -246,6 +248,17 @@ pcb_t* removeChild(pcb_t *p){
             pcb_PTR elem_toremove = p->p_child;
             p->p_child = NULL;
 
+            //pulisco il puntatore all'elemento rimosso
+            elem_toremove->p_next_sib = NULL;
+            elem_toremove->p_prev_sib = NULL;
+            elem_toremove->p_prnt = NULL;
+            return elem_toremove;
+
+        }else if(p->p_child->p_prev_sib == p->p_child->p_next_sib){
+            pcb_PTR elem_toremove = p->p_child;
+            p->p_child = p->p_child->p_next_sib;
+            p->p_child->p_next_sib = p->p_child;
+            p->p_child->p_prev_sib = p->p_child;
             //pulisco il puntatore all'elemento rimosso
             elem_toremove->p_next_sib = NULL;
             elem_toremove->p_prev_sib = NULL;
@@ -277,7 +290,7 @@ altrimenti restituisce l�elemento rimosso (cio� p). A differenza della remov
 necessariamente il primo figlio del padre).*/
 pcb_t *outChild(pcb_t* p){
     if (p != NULL){
-        if(p->p_prnt == NULL || p->p_prnt->p_child == p){//se p non ha un padre oppure se p � l'unico figlio oppure � il primo figlio
+        if(p->p_prnt == NULL || p->p_prnt->p_child == p || p->p_next_sib == p){//se p non ha un padre oppure se p � l'unico figlio oppure � il primo figlio
             return removeChild(p->p_prnt);
 
         }else{

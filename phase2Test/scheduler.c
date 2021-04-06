@@ -7,7 +7,6 @@
 
 void scheduler()
 {   
-    sysSCHEDULER();
 
     current_proc = removeProcQ(&readyQ);
     if (current_proc == NULL){//se la readyQ è vuota
@@ -19,8 +18,7 @@ void scheduler()
             WAIT();
         }
         if (proc_count > 0 && softB_count == 0){
-            breakPoint3();
-             PANIC(); }
+            PANIC(); }
     }else{
         
         //carica 5 millisecondi in PLT
