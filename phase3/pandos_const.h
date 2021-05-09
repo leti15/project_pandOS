@@ -7,7 +7,7 @@
  *
  ****************************************************************************/
 
-#include <umps3/umps/const.h>                                                                         s!!!!
+#include <umps3/umps/const.h>
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/
@@ -152,9 +152,6 @@
 #define STATESIZE  0x8C
 #define DEVICECNT  (DEVINTNUM * DEVPERINT)
 #define MAXSTRLENG 128
-
-#define DELAYASID    (UPROCMAX + 1)
-#define KUSEG3SECTNO 0
 
 #define VMDISK        0
 #define MAXPAGES      32
