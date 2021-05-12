@@ -47,7 +47,7 @@
 #define CLOCKWAIT     7
 #define GETSUPPORTPTR 8
 #define TERMINATE     9
-#define GET_TOD       10
+#define GET_TOD       10 
 #define WRITEPRINTER  11
 #define WRITETERMINAL 12
 #define READTERMINAL  13

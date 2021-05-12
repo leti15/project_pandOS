@@ -19,6 +19,7 @@ int softB_count;
 pcb_PTR readyQ;
 pcb_PTR current_proc;
 passupvector_t* PUV;
+swap_t spt[POOLSIZE];
 // puntatore alla coda dei semafori attivi 'semd_h'
 
 int main()
@@ -27,6 +28,7 @@ int main()
     softB_count = 0;
     readyQ = mkEmptyProcQ();
     current_proc = NULL;
+    
     
     PUV = (passupvector_t*) PASSUPVECTOR;
 
@@ -38,6 +40,7 @@ int main()
     initPcbs();
     initASL();
     init_devices();
+    init_spt();
 
     LDIT(100000);  // setto interval timer di 100 millisecondi (=100000 microsecondi)
     

@@ -40,6 +40,7 @@ typedef __SIZE_TYPE__ size_t;
 #define CAUSE_GET_EXCCODE(x)    (((x) & EXC_MASK) >> 2)
 
 extern int devicesem[DEVARRSIZE];
+extern swap_t spt[POOLSIZE];
 extern int count_time;
 extern int proc_count;
 extern int softB_count;
@@ -61,6 +62,7 @@ extern passupvector_t* PUV;
 
 void * memcpy (void *dest, const void *src, size_t len);
 void init_devices();
+void init_spt();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
