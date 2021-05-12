@@ -40,13 +40,13 @@ typedef __SIZE_TYPE__ size_t;
 #define CAUSE_GET_EXCCODE(x)    (((x) & EXC_MASK) >> 2)
 
 extern int devicesem[DEVARRSIZE];
-extern swap_t spt[POOLSIZE];
 extern int count_time;
 extern int proc_count;
 extern int softB_count;
 extern pcb_PTR readyQ;
 extern pcb_PTR current_proc;
 extern passupvector_t* PUV;
+
 /** puntatore alla coda dei semafori attivi 'semd_h' */
 
 //device semaphores

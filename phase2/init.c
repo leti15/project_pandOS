@@ -10,7 +10,7 @@
 extern void uTLB_RefillHandler();
 
 
-extern void fooBar();
+extern void exception_handler();
 extern void test(); 
 int devicesem[DEVARRSIZE];
 int count_time;
@@ -30,7 +30,7 @@ int main()
     
     PUV = (passupvector_t*) PASSUPVECTOR;
 
-    PUV->exception_handler = ((memaddr) fooBar);
+    PUV->exception_handler = ((memaddr) exception_handler);
     PUV->exception_stackPtr = 0x20001000;
     PUV->tlb_refill_handler = ((memaddr) uTLB_RefillHandler);
     PUV->tlb_refill_stackPtr = 0x20001000;

@@ -55,10 +55,3 @@ int check_dev_semAdd(int* semAdd){
     return (semAdd >= &devicesem[0] && semAdd <= &devicesem[DEVARRSIZE-1]);
 }
 
-void init_spt() {
-    for (int i=0; i<POOLSIZE; i++) {
-        spt[i].sw_asid = NOPROC;
-        spt[i].sw_pageNo = 0;
-        spt[i].sw_pte = NULL;
-    }
-}

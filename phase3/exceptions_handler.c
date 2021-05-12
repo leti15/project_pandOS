@@ -13,7 +13,20 @@
             */
 state_t *state_reg;
 
-void fooBar()
+void uTLB_RefillHandler(){
+    state_reg = (state_t *)BIOSDATAPAGE;
+    
+    int missing_page = state_reg->entry_hi;
+    pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[missing_page];
+
+    setENTRYHI( (unsigned int*) &new_pgEntry.pte_entryHI);
+    setENTRYLO( (unsigned int*) &new_pgEntry.pte_entryLO);
+    TLBWR();
+
+    LDST(state_reg);
+}
+
+void exception_handler()
 { //appena entra qui e' in kernel mode con interrupt disabilitati!!!
 
     state_reg = (state_t *)BIOSDATAPAGE;
@@ -156,9 +169,9 @@ void SYS_handler()
         }
         else if (current_a0 == 8) //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
         {
-
-            state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
-            LDST(state_reg);
+            sys_8();
+            //state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
+            //LDST(state_reg);
         }
         else
         {
@@ -341,6 +354,12 @@ int interrupt_handler()
     }
 
 }
+
+void sys_8(){
+    state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
+    LDST(state_reg);
+}
+
 void sys_terminate(){
 
     sys_t(current_proc);

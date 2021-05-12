@@ -9,17 +9,17 @@
 
 extern void uTLB_RefillHandler();
 
-
-extern void fooBar();
+extern void exception_handler();
 extern void test(); 
 int devicesem[DEVARRSIZE];
+int swp_sem;
 int count_time;
 int proc_count;
 int softB_count;
 pcb_PTR readyQ;
 pcb_PTR current_proc;
 passupvector_t* PUV;
-swap_t spt[POOLSIZE];
+swap_t*  spt = (swap_t*) 0x20020000;
 // puntatore alla coda dei semafori attivi 'semd_h'
 
 int main()
@@ -32,7 +32,7 @@ int main()
     
     PUV = (passupvector_t*) PASSUPVECTOR;
 
-    PUV->exception_handler = ((memaddr) fooBar);
+    PUV->exception_handler = ((memaddr) exception_handler);
     PUV->exception_stackPtr = 0x20001000;
     PUV->tlb_refill_handler = ((memaddr) uTLB_RefillHandler);
     PUV->tlb_refill_stackPtr = 0x20001000;

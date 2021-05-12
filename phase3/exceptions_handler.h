@@ -10,9 +10,11 @@
 extern int resource_dev;
 extern int resource_it;
 
-void fooBar();
+void uTLB_RefillHandler();
+void exception_handler();
 void SYS_handler();
 int interrupt_handler();
+void sys_8();
 void sys_terminate ();
 void sys_t(pcb_PTR proc);
 void sys_p (int* temp);
