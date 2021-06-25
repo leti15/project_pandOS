@@ -56,5 +56,9 @@ int check_dev_semAdd(int* semAdd){
 }
 
 int inspecteHI(int entryHi){
-  return (entryHi >> 12) && 00000000000000000011;
+  entryHi=(entryHi >> 12) && 00000000000000000011;
+  if (entryHi==255) 
+    return 31;
+  else 
+    return entryHi;
 }
