@@ -55,3 +55,6 @@ int check_dev_semAdd(int* semAdd){
     return (semAdd >= &devicesem[0] && semAdd <= &devicesem[DEVARRSIZE-1]);
 }
 
+int inspecteHI(int entryHi){
+  return (entryHi >> 12) && 00000000000000000011;
+}
