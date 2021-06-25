@@ -28,12 +28,14 @@ void update_BackingStore(){
 }
 
 //da implementare
-pteEntry_t read_from_backStore(int pageNO){
+unsigned int read_from_backStore(support_t* sup, int pageNO){
 
             /**DA FARE:
          *  1.leggo contenuto pagina (non so come)
          *  2.se errore in lettura -> chiama program trap handler
          */
+
+        return sup->sup_privatePgTbl[pageNO].pte_entryLO >> 12;
 }
 
 void pager(){
@@ -52,12 +54,14 @@ void pager(){
         if (frame_to_replace->sw_asid != NOPROC){
             //libero frame
 
-        /**DA FARE ATOMICAMENTE*/
-            //metto a zero il bit che lo rende invalido
+        /**DA FARE ATOMICAMENTE= disabilitare interrupts*/
+            setStatus(state_reg->status & DISABLEINTERRUPTS);
+            //metto a zero il bit che lo rende invalido ovvero "V"
             frame_to_replace->sw_pte->pte_entryLO = frame_to_replace->sw_pte->pte_entryLO & INVALIDMASK;
-
             update_TLB();
         /**FINO A QUI (atomicamente)*/
+            //riabilito interrupts
+            setStatus( state_reg->status = state_reg->status & ENABLEINTERRUPTS);
             update_BackingStore();
         }
         
@@ -65,12 +69,10 @@ void pager(){
         
         // leggo contenuto della pagina logica (il cui numero è salvato in frame_to_replace->sw_pageNO) del backing store 
         int virtual_pageNO = frame_to_replace->sw_pageNo;
-    
-        pteEntry_t backStored_page = read_from_backStore(virtual_pageNO);
 
         frame_to_replace->sw_asid = current_proc->p_supportStruct->sup_asid;
         frame_to_replace->sw_pageNo = missing_page;
-        *frame_to_replace->sw_pte = backStored_page;
+        frame_to_replace->sw_pte->pte_entryLO = read_from_backStore(support_struct, virtual_pageNO);
 
     /**DA FARE ATOMICAMENTE*/
         //modifico bit V(page present = 1) e PFN(sta occupando pagina 'frame_to_replace')
