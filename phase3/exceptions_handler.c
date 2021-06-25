@@ -17,7 +17,7 @@ void uTLB_RefillHandler(){
     state_reg = (state_t *)BIOSDATAPAGE;
     
     int missing_page = state_reg->entry_hi;
-    pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[missing_page];
+    pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[inspecteHI(missing_page)];
 
     setENTRYHI( (unsigned int*) &new_pgEntry.pte_entryHI);
     setENTRYLO( (unsigned int*) &new_pgEntry.pte_entryLO);
