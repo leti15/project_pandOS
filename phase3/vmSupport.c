@@ -11,8 +11,9 @@ void init_spt() {
 
 //da implementare
 swap_t* replacement_FIFO(){
-    
-
+    static int chosenframe=-1;
+    chosenframe=chosenframe+1;
+    return (swap_t*) spt+(chosenframe%POOLSIZE);
 }
 
 //da rifare
