@@ -66,5 +66,6 @@ void init_spt();
 int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
+int inspecteHI(int entryHi);
 
 #endif /* !defined(COMMONS_H) */
