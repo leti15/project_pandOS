@@ -49,6 +49,7 @@ void pager(){
     }else{
         sys_p(&swp_sem);
         int missing_page = state_reg->entry_hi;
+        int p=inspecteHI(missing_page);
 
         swap_t* frame_to_replace = replacement_FIFO();
         if (frame_to_replace->sw_asid != NOPROC){
