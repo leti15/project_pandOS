@@ -39,6 +39,10 @@ typedef __SIZE_TYPE__ size_t;
 #define EXC_MASK 0b00000000000000000000000001111100
 #define CAUSE_GET_EXCCODE(x)    (((x) & EXC_MASK) >> 2)
 
+#define INVALIDMASK 0b11111111111111111111110111111111
+#define DISABLEINTERRUPTS 0b11111111111111111111111111111110
+#define ENABLEINTERRUPTS 0b00000000000000000000000000000001
+
 extern int devicesem[DEVARRSIZE];
 extern int count_time;
 extern int proc_count;
@@ -67,5 +71,7 @@ int check_dev_installation( int numLine, int numDev);
 int check_dev_interruption( int numLine, int numDev);
 int check_dev_semAdd(int* semAdd);
 int inspecteHI(int entryHi);
+void atomON();
+void atomOFF();
 
 #endif /* !defined(COMMONS_H) */

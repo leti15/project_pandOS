@@ -65,3 +65,15 @@ int inspecteHI(int entryHi){
   else 
     return entryHi;
 }
+
+void atomON(){
+  state_t* state_reg = (state_t *)BIOSDATAPAGE;
+  //disabilito interrupts
+  setStatus(state_reg->status & DISABLEINTERRUPTS);
+}
+
+void atomOFF(){
+  state_t* state_reg = (state_t *)BIOSDATAPAGE;
+  //riabilito interrupts
+  setStatus( state_reg->status = state_reg->status & ENABLEINTERRUPTS);
+}
