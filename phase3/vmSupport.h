@@ -20,8 +20,8 @@ extern swap_t*  spt;
 void init_spt();
 swap_t* replacement_FIFO();
 void update_TLB();
-void update_BackingStore();
-unsigned int read_from_backStore(support_t* sup, int pageNO);
+void update_BackingStore(swap_t* frame, int owner_process);
+unsigned int ReadWrite_from_backStore(swap_t* frame, support_t* support_process, int virtualPG, int readMode);
 void pager();
 
 #endif

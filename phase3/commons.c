@@ -55,9 +55,12 @@ int check_dev_semAdd(int* semAdd){
     return (semAdd >= &devicesem[0] && semAdd <= &devicesem[DEVARRSIZE-1]);
 }
 
+/**
+ * Estraggo il numero di pagina virtuale data la entryHI, se == 255 allora ....??
+*/
 int inspecteHI(int entryHi){
-  entryHi=(entryHi >> 12) && 00000000000000000011;
-  if (entryHi==255) 
+  entryHi = (entryHi >> 12) && 00000000000000000011; //volevate fare l'and logico (bit a bit)?? perchè quello è solo con &, non && 
+  if (entryHi == 255) 
     return 31;
   else 
     return entryHi;

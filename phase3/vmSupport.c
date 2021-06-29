@@ -9,11 +9,10 @@ void init_spt() {
     swp_sem = 1;
 }
 
-//da implementare
 swap_t* replacement_FIFO(){
-    static int chosenframe=-1;
-    chosenframe=chosenframe+1;
-    return (swap_t*) spt+(chosenframe%POOLSIZE);
+    static int chosenframe = - 1;
+    chosenframe = chosenframe + 1;
+    return (swap_t*) spt + (chosenframe%POOLSIZE);
 }
 
 //da rifare
@@ -23,20 +22,54 @@ void update_TLB(){
 }
 
 //da implementare
-void update_BackingStore(){
+void update_BackingStore(swap_t* frame, int owner_process){
+ /**DA FARE:
+         *  1.leggo contenuto pagina (non so come)
+         *  2.se errore in lettura -> chiama program trap handler
+         * 
+         */
 
 
 }
 
-//da implementare
-unsigned int read_from_backStore(support_t* sup, int pageNO){
+/**
+ * se 'readMode' è 1, legge il contenuto della pagina fisica relativa alla pagina virtuale 'virtualPG' (dalla page table da 'support_process') e lo salva in 'frame';
+ * se 'readmode' è 0, scrive il contenuto di 'frame' nella pagina fisica relativa alla pagina virtuale 'virtualPG' (della page table da 'support_process')
+*/
+unsigned int ReadWrite_from_backStore(swap_t* frame, support_t* support_process, int virtualPG, int readMode){
 
-            /**DA FARE:
+        /**DA FARE:
          *  1.leggo contenuto pagina (non so come)
          *  2.se errore in lettura -> chiama program trap handler
+         * 1.Write the flash device’s DATA0 field with the appropriate starting physical
+            address of the 4k block to be read (or written); the particular frame’s starting
+            address.
+          2.Write the flash device’s COMMAND field with the device block number
+            (high order three bytes) and the command to read (or write) in the lower
+            order byte.
+         As with all I/O operations, this should be immediately followed by a SYS5
          */
+        unsigned int PFN = -1;
+        for (int i = 0; i < 31; i+=1){
+            if(support_process->sup_privatePgTbl[i].pte_entryHI >> 12 == virtualPG)
+                PFN = support_process->sup_privatePgTbl[i].pte_entryLO >> 12;
+        }
+        if(PFN != -1)
+        {   int device_num = support_process->sup_asid;
+            devreg_t* base = ((unsigned int)GET_devAddrBase(4, device_num));//=(Nlinea, Ndevice)
+            base->dtp.data0 = ((unsigned int)*frame) >> 12;  //indirizzo del frame shiftato di 12
+            base->dtp.command = PFN & 0b11111111111111111111000000000000; // == BLOCKNUMBER??
+            if (readMode == 1) //READ
+                base->dtp.command = base->dtp.command | 0b00000000000000000000000000000010;
+            else //WRITE
+                base->dtp.command = base->dtp.command | 0b00000000000000000000000000000011;
 
-        return sup->sup_privatePgTbl[pageNO].pte_entryLO >> 12;
+            SYSCALL(IOWAIT, 4, device_num, FALSE); //se restituisce errore --> chiama program trap handler
+
+        }else{
+            //ERRORE!
+        }
+
 }
 
 void pager(){
@@ -49,32 +82,43 @@ void pager(){
         program_trap_exHandle();
     }else{
         sys_p(&swp_sem);
-        int missing_page = state_reg->entry_hi;
-        int p=inspecteHI(missing_page);
+        int missing_page_entryHI = state_reg->entry_hi; //campo entryHI contenente la pagina virtuale che ha causato il page fault
+        int p = inspecteHI(missing_page_entryHI); //numero pagina virtuale non trovata (che ha causato page fault)
 
-        swap_t* frame_to_replace = replacement_FIFO();
+        swap_t* frame_to_replace = replacement_FIFO(); // = i
         if (frame_to_replace->sw_asid != NOPROC){
             //libero frame
+            if ((frame_to_replace->sw_pte->pte_entryLO & 0b00000000000000000000001000000000) == 0){  //se il dirty bit ("V") == 0 allora NOTvalid
+                int vPN = frame_to_replace->sw_pageNo;   //= k = virtual page number
+                int owner = frame_to_replace->sw_asid;   //= x = processo proprietario della pagina
 
-        /**DA FARE ATOMICAMENTE= disabilitare interrupts*/
-            setStatus(state_reg->status & DISABLEINTERRUPTS);
-            //metto a zero il bit che lo rende invalido ovvero "V"
-            frame_to_replace->sw_pte->pte_entryLO = frame_to_replace->sw_pte->pte_entryLO & INVALIDMASK;
-            update_TLB();
-        /**FINO A QUI (atomicamente)*/
-            //riabilito interrupts
-            setStatus( state_reg->status = state_reg->status & ENABLEINTERRUPTS);
-            update_BackingStore();
+            /**DA FARE ATOMICAMENTE= disabilitare interrupts*/
+                setStatus(state_reg->status & DISABLEINTERRUPTS);
+                //metto a zero il bit che lo rende invalido ovvero "V"
+                frame_to_replace->sw_pte->pte_entryLO = frame_to_replace->sw_pte->pte_entryLO & INVALIDMASK;
+                update_TLB();
+            /**FINO A QUI (atomicamente)*/
+                //riabilito interrupts
+                setStatus( state_reg->status = state_reg->status & ENABLEINTERRUPTS);
+                
+                /*aggiorno la page table ed il backing store del processo al quale sto "fregando" 
+                * il frame da usare per la pagina virtuale che ho cercato ma che non ho trovato*/
+                //int PFN = frame_to_replace->sw_pte->pte_entryLO >> 12; //phisical frame number, 
+                update_BackingStore(frame_to_replace, owner);  
+            }
         }
-        
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-        // leggo contenuto della pagina logica (il cui numero è salvato in frame_to_replace->sw_pageNO) del backing store 
-        int virtual_pageNO = frame_to_replace->sw_pageNo;
+        /**
+         * "Read the contents of the Current Process’s backing store/flash device logical
+            page p into frame i. [Section 4.5.1]
+            Treat any error status from the read operation as a program trap.""
+        */
+        ReadWrite_from_backStore(frame_to_replace, support_struct, p, 1);
 
-        frame_to_replace->sw_asid = current_proc->p_supportStruct->sup_asid;
-        frame_to_replace->sw_pageNo = missing_page;
-        frame_to_replace->sw_pte->pte_entryLO = read_from_backStore(support_struct, virtual_pageNO);
+
+        //updating swap pool 
+        frame_to_replace->sw_pageNo = p;
+        frame_to_replace->sw_asid = support_struct->sup_asid;
 
     /**DA FARE ATOMICAMENTE*/
         //modifico bit V(page present = 1) e PFN(sta occupando pagina 'frame_to_replace')
