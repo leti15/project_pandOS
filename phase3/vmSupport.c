@@ -89,7 +89,7 @@ unsigned int ReadWrite_from_backStore(swap_t* frame, pteEntry_t* page_table, int
 
 void pager(){
     state_t* state_reg = (state_t *)BIOSDATAPAGE;
-    support_t* support_struct = current_proc->p_supportStruct;
+    support_t* support_struct = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause_reg = support_struct->sup_exceptState[0].cause;
 
     if(cause_reg != TLBINVLDL && cause_reg != TLBINVLDS){ //invalid modification
@@ -111,7 +111,7 @@ void pager(){
             /**DA FARE ATOMICAMENTE= disabilitare interrupts*/
                 atomON();
                 //metto a zero il bit che lo rende invalido ovvero "V"
-                frame_to_replace->sw_pte->pte_entryLO = frame_to_replace->sw_pte->pte_entryLO & INVALIDMASK;
+                frame_to_replace->sw_pte->pte_entryLO = frame_to_replace->sw_pte->pte_entryLO & INVALIDbitV;
                 update_TLB();
             /**FINO A QUI (atomicamente)*/
                 atomOFF();
@@ -136,18 +136,23 @@ void pager(){
 
 
         //updating swap pool 
-        frame_to_replace->sw_pageNo = p;  //TODO: da ricontrollare
+        int pos_p;
+        for (int i = 0; i < USERPGTBLSIZE; i+= 1)
+            if((support_struct->sup_privatePgTbl[i].pte_entryHI >> 12) == p){
+                frame_to_replace->sw_pte = &(support_struct->sup_privatePgTbl[i]);
+                pos_p = i;
+            }
+        frame_to_replace->sw_pageNo = p; 
         frame_to_replace->sw_asid = support_struct->sup_asid;
 
     /**DA FARE ATOMICAMENTE = disabilitare interrupts*/
         atomON();
         /**Update the Current Process’s Page Table entry for page p to indicate it is
         now present (V bit) and occupying frame i (PFN field).*/
-
-        //modifico bit V(page present = 1) e PFN(sta occupando pagina 'frame_to_replace')
-
-
-
+        //modifico bit V(page present = 1) 
+        support_struct->sup_privatePgTbl[pos_p].pte_entryLO = support_struct->sup_privatePgTbl[pos_p].pte_entryLO | VALIDbitV;
+        //modifico PFN(sta occupando pagina 'frame_to_replace')
+        support_struct->sup_privatePgTbl[pos_p].pte_entryHI = (support_struct->sup_privatePgTbl[pos_p].pte_entryHI & 0b00000000000000000000111111111111) | (unsigned int)*frame_to_replace;
 
         /**Update the TLB. The cached entry in the TLB for the Current Process’s
         page p is clearly out of date; it was just updated in the previous step.*/
@@ -161,3 +166,5 @@ void pager(){
     }
 
 }
+
+

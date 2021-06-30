@@ -39,7 +39,8 @@ typedef __SIZE_TYPE__ size_t;
 #define EXC_MASK 0b00000000000000000000000001111100
 #define CAUSE_GET_EXCCODE(x)    (((x) & EXC_MASK) >> 2)
 
-#define INVALIDMASK 0b11111111111111111111110111111111
+#define INVALIDbitV 0b11111111111111111111110111111111
+#define VALIDbitV 0b00000000000000000000001000000000
 #define DISABLEINTERRUPTS 0b11111111111111111111111111111110
 #define ENABLEINTERRUPTS 0b00000000000000000000000000000001
 
@@ -63,6 +64,8 @@ extern passupvector_t* PUV;
  * 48: DEVICE INTERVAL TIMER
  * 49: DEVICE PLT
 */
+extern void sys_terminate();
+extern void sys_8();
 
 void * memcpy (void *dest, const void *src, size_t len);
 void init_devices();

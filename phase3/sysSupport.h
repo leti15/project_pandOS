@@ -8,7 +8,7 @@
 #include "scheduler.h"
 
 void general_exHandle();
-void syscall_exHandle();
+void syscall_exHandle(int sysCode);
 void program_trap_exHandle();
 
 #endif
