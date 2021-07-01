@@ -43,20 +43,97 @@ void syscall_exHandle(int sysCode){
         ing U-proc’s logical address space, request a SYS11 with a length less than 0, or
         a length greater than 128. Any of these errors should result in the U-proc being
         terminated (SYS9).*/
-        if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 == /*address out of virtual space*/){
+        if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
             sys_terminate();
         }else{
             //parametri corretti, posso procedere
-            SYSCALL(IOWAIT, 6, support_except->sup_asid, 0);
+            char stringa[state_except->reg_a2];
+            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
+            int return_msg, i = 0;
+
+            while ( i < state_except->reg_a2 && stringa[i] != EOS && return_msg == READY)
+            {
+                base_regdev->dtp.data0 = stringa[i];
+                base_regdev->dtp.command = 2; //= PRINTCHAR
+                return_msg = SYSCALL(IOWAIT, 6, support_except->sup_asid, FALSE);
+                i += 1;
+            }
+            if (return_msg != READY){
+                //qualcosa è andato storto
+                state_except->reg_v0 = return_msg;
+            }else{
+                //stringa stampata correttamente
+                state_except->reg_v0 = i; //numero caratteri stampati (non conto l'EOS)
+            }
 
         }
     }else if(sysCode == 12){
         //SYSCALL (WRITETERMINAL, char *virtAddr,int len, 0)
+ 
+        if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
+            sys_terminate();
+        }else{
+            //parametri corretti, posso procedere
+            char stringa[state_except->reg_a2];
+            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
+            int return_msg, i = 0;
+
+            while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
+            {
+                base_regdev->term.transm_command = (stringa[i] >> 8) | 2;
+                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, FALSE);
+                i += 1;
+            }
+            if (return_msg != READY && return_msg != 5){
+                //qualcosa è andato storto
+                state_except->reg_v0 = return_msg;
+            }else{
+                //stringa stampata correttamente
+                state_except->reg_v0 = i; //numero caratteri trasmessi (non conto l'EOS)
+            }
+        }
     }else if(sysCode == 13){
         //SYSCALL (READTERMINAL, char *virtAddr,0, 0)
+         if( state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
+            sys_terminate();
+        }else{
+            //parametri corretti, posso procedere
+            char initial_stringa [1] = EOS;
+            char *stringa = initial_stringa;
+            char rcv_char = '0';
+            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
+            int return_msg, i = 1;
+
+            while ((return_msg == READY || return_msg == 5) && rcv_char != EOS)
+            {
+                base_regdev->term.recv_command = 2;
+                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, TRUE);
+                rcv_char = base_regdev->term.recv_status >> 8;
+                stringa = addCharRecvd(stringa, i, rcv_char);
+                i += 1;
+            }
+            if (return_msg != 5){
+                //qualcosa è andato storto
+                state_except->reg_v0 = return_msg;
+            }else{
+                //stringa stampata correttamente
+                state_except->reg_v0 = i-1; //numero caratteri ricevuti (sottraggo il carattere EOS)
+            }
+        }
+   
     }
 
 
 }
 
 void program_trap_exHandle(){}
+char* addCharRecvd(char stringa[], int len, char c){
+    char new_stringa[len+1];
+    for (int i = 0; i< len-1; i += 1){
+        new_stringa[i] = stringa[i];
+    }
+    new_stringa[len-1] = c;
+    new_stringa[len] = EOS;
+    return new_stringa;
+
+}

@@ -10,5 +10,6 @@
 void general_exHandle();
 void syscall_exHandle(int sysCode);
 void program_trap_exHandle();
+char* addCharRecvd(char stringa[], int len, char c);
 
 #endif
