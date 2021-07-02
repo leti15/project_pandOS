@@ -6,7 +6,9 @@
 #include "pandos_types.h"
 #include "commons.h"
 #include "scheduler.h"
+#include "vmSupport.h"
+#include "sysSupport.h"
 
-
-
+void test();
+void initPGTBL(pteEntry_t* pgtable, int asid);
 #endif

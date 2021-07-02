@@ -6,10 +6,11 @@
 #include "pandos_types.h"
 #include "commons.h"
 #include "scheduler.h"
+#include "vmSupport.h"
 
-void general_exHandle();
-void syscall_exHandle(int sysCode);
-void program_trap_exHandle();
+void general_exHandler();
+void syscall_exHandler(int sysCode);
+void program_trap_exHandler();
 char* addCharRecvd(char stringa[], int len, char c);
 
 #endif
