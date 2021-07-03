@@ -51,6 +51,7 @@ extern int softB_count;
 extern pcb_PTR readyQ;
 extern pcb_PTR current_proc;
 extern passupvector_t* PUV;
+extern int devRegSem[8];
 
 /** puntatore alla coda dei semafori attivi 'semd_h' */
 

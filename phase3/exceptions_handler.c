@@ -19,8 +19,8 @@ void uTLB_RefillHandler(){
     int missing_page = state_reg->entry_hi;
     pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[inspecteHI(missing_page)];
 
-    setENTRYHI( (unsigned int*) &new_pgEntry.pte_entryHI);
-    setENTRYLO( (unsigned int*) &new_pgEntry.pte_entryLO);
+    setENTRYHI( (unsigned int) &new_pgEntry.pte_entryHI);
+    setENTRYLO( (unsigned int) &new_pgEntry.pte_entryLO);
     TLBWR();
 
     LDST(state_reg);
@@ -448,9 +448,9 @@ void PassUpOrDie(int EXCEPT)
     if (current_proc->p_supportStruct == NULL) { sys_terminate(); }
     else{
         current_proc->p_supportStruct->sup_exceptState[EXCEPT] = *((state_t*)BIOSDATAPAGE);
-        unsigned int sp = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].c_stackPtr;
-        unsigned int status = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].c_status;
-        unsigned int pc = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].c_pc;
+        unsigned int sp = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].stackPtr;
+        unsigned int status = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].status;
+        unsigned int pc = current_proc->p_supportStruct->sup_exceptContext[EXCEPT].pc;
         LDCXT(sp, status, pc);
     }
 }

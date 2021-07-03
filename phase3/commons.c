@@ -11,9 +11,8 @@ void * memcpy (void *dest, const void *src, size_t len)
 
 void init_devices() {
     for (int i = 0; i < DEVARRSIZE-1; i = i + 1) { 
-        devicesem[i] = 1;
+        devicesem[i] = 0;
     }
-    devicesem[DEVARRSIZE-1] = 0; //SEMAFORO INTERVAL TIMER
 }
 
 int check_dev_installation( int numLine, int numDev){

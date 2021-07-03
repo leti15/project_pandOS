@@ -1,8 +1,10 @@
-#include <initProc.h>
+#include "initProc.h"
+int devRegSem[8];
 
 void test(){
     init_spt();
     init_devices();
+    init_supLevSem();
 
     static state_t childrenState[8];
     for (int i = 1; i < 9; i += 1){
@@ -47,4 +49,9 @@ void initPGTBL(pteEntry_t* pgtable, int asid){
     //stack page
     pgtable[MAXPAGES].pte_entryHI = ((0xBFFFF + MAXPAGES-1) >> 12) & asid;
     pgtable[MAXPAGES].pte_entryLO = 5; // = 0b00000000000000000000000000000101 ( D bit = 1, V bit = 0, G bit = 1 ) 
+}
+
+void init_supLevSem(){
+    for (int i = 0; i <= 8; i += 1)
+        devRegSem[i] = 1;
 }

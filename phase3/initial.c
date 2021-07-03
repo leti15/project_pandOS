@@ -6,21 +6,17 @@
 #include "scheduler.h"
 #include "exceptions_handler.h"
 
-
 extern void uTLB_RefillHandler();
-
 extern void exception_handler();
 extern void test(); 
+
 int devicesem[DEVARRSIZE];
-int swp_sem;
 int count_time;
 int proc_count;
 int softB_count;
 pcb_PTR readyQ;
 pcb_PTR current_proc;
 passupvector_t* PUV;
-swap_t*  spt = (swap_t*) 0x20020000;
-// puntatore alla coda dei semafori attivi 'semd_h'
 
 int main()
 {

@@ -1,4 +1,4 @@
-#include <sysSupport.h>
+#include "sysSupport.h"
 
 support_t* support_except;
 state_t* state_except;
@@ -16,15 +16,9 @@ void general_exHandler(){
 
 void syscall_exHandler(int sysCode){
     support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
-    /** oppure non si può usare "SYSCALL"??
-     *  sys_8();
-     *  support_except = state_except->reg_v0;
-    */
 
-    if(sysCode == 9){
-        //SYSCALL (TERMINATE, 0, 0, 0)
-        sys_terminate();
-        
+    if(sysCode == 9){ //SYSCALL (TERMINATE, 0, 0, 0);
+        SYSCALL (TERMPROCESS, 0, 0, 0);
     }
     else if(sysCode == 10){
         //SYSCALL (GETTOD, 0, 0, 0)
@@ -42,12 +36,15 @@ void syscall_exHandler(int sysCode){
         a length greater than 128. Any of these errors should result in the U-proc being
         terminated (SYS9).*/
         if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
-            sys_terminate();
+            SYSCALL (TERMPROCESS, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
             char stringa[state_except->reg_a2];
             devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
             int return_msg, i = 0;
+
+            //ottengo mutua esclsione sul device register
+            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid], 0, 0);
 
             while ( i < state_except->reg_a2 && stringa[i] != EOS && return_msg == READY)
             {
@@ -56,6 +53,10 @@ void syscall_exHandler(int sysCode){
                 return_msg = SYSCALL(IOWAIT, 6, support_except->sup_asid, FALSE);
                 i += 1;
             }
+
+            //rilascio mutua esclusione sul semaforo del device register
+            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid], 0, 0);
+
             if (return_msg != READY){
                 //qualcosa è andato storto
                 state_except->reg_v0 = return_msg;
@@ -70,12 +71,15 @@ void syscall_exHandler(int sysCode){
         //SYSCALL (WRITETERMINAL, char *virtAddr,int len, 0)
  
         if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
-            sys_terminate();
+            SYSCALL (TERMPROCESS, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
             char stringa[state_except->reg_a2];
             devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
             int return_msg, i = 0;
+
+            //ottengo mutua esclsione sul device register
+            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid], 0, 0);
 
             while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
             {
@@ -83,6 +87,10 @@ void syscall_exHandler(int sysCode){
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, FALSE);
                 i += 1;
             }
+
+            //rilascio mutua esclusione sul semaforo del device register
+            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid], 0, 0);
+
             if (return_msg != READY && return_msg != 5){
                 //qualcosa è andato storto
                 state_except->reg_v0 = return_msg;
@@ -95,23 +103,30 @@ void syscall_exHandler(int sysCode){
     else if(sysCode == 13){
         //SYSCALL (READTERMINAL, char *virtAddr,0, 0)
          if( state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
-            sys_terminate();
+            SYSCALL (TERMPROCESS, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
-            char initial_stringa [1] = EOS;
-            char *stringa = initial_stringa;
+            char initial_stringa = EOS;
+            char *stringa = &initial_stringa;
             char rcv_char = '0';
             devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
             int return_msg, i = 1;
 
+            //ottengo mutua esclsione sul device register
+            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid], 0, 0);
+
             while ((return_msg == READY || return_msg == 5) && rcv_char != EOS)
-            {
+            {   char new_stringa[i+1];
                 base_regdev->term.recv_command = 2;
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, TRUE);
                 rcv_char = base_regdev->term.recv_status >> 8;
-                stringa = addCharRecvd(stringa, i, rcv_char);
+                stringa = addCharRecvd(stringa, i, rcv_char, new_stringa);
                 i += 1;
             }
+
+            //rilascio mutua esclusione sul semaforo del device register
+            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid], 0, 0);
+
             if (return_msg != 5){
                 //qualcosa è andato storto
                 state_except->reg_v0 = return_msg;
@@ -122,9 +137,7 @@ void syscall_exHandler(int sysCode){
         }
     }
     if(sysCode != 9){
-        //incrementare PC di 4....quale dei due??
-        // current_proc->p_s.pc_epc += 4;
-        state_except->pc_epc += 4;//penso questo
+        state_except->pc_epc += 4;
         LDST(state_except);
     }
 }
@@ -134,8 +147,7 @@ void program_trap_exHandler(){
     sys_terminate();
 }
 
-char* addCharRecvd(char stringa[], int len, char c){
-    char new_stringa[len+1];
+char* addCharRecvd(char stringa[], int len, char c, char new_stringa[]){
     for (int i = 0; i< len-1; i += 1){
         new_stringa[i] = stringa[i];
     }

@@ -11,4 +11,5 @@
 
 void test();
 void initPGTBL(pteEntry_t* pgtable, int asid);
+void init_supLevSem();
 #endif

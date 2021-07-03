@@ -1,6 +1,10 @@
-#include <vmSupport.h>
+#include "vmSupport.h"
+
+swap_t*  spt;
+int swp_sem;
 
 void init_spt() {
+    spt = (swap_t*) 0x20020000;
     for (int i=0; i<POOLSIZE; i++) {
         spt[i].sw_asid = NOPROC;
         spt[i].sw_pageNo = 0;
@@ -63,9 +67,12 @@ unsigned int ReadWrite_from_backStore(swap_t* frame, pteEntry_t* page_table, int
         if(PFN != -1)
         {   int device_num = processID; //penso sia giusto cosi....(non sono sicura)
             devreg_t* base = ((unsigned int)GET_devAddrBase(4, device_num));//=(Nlinea, Ndevice)
+             
+            //ottengo mutua esclusione sul device register
+            SYSCALL(PASSEREN, &devRegSem[processID], 0, 0);
 
             //scrivo campo DATA0
-            base->dtp.data0 = ((unsigned int)*frame) >> 12;  //indirizzo del frame shiftato di 12
+            base->dtp.data0 = ((int)frame) >> 12;  //indirizzo del frame shiftato di 12
 
         /**DA FARE ATOMICAMENTE= disabilitare interrupts*/
             atomON();
@@ -82,6 +89,8 @@ unsigned int ReadWrite_from_backStore(swap_t* frame, pteEntry_t* page_table, int
         /**FINO A QUI (atomicamente)*/
             atomOFF();
 
+            //rilascio semaforo device register
+            SYSCALL(VERHOGEN, &devRegSem[processID], 0, 0);
         }else{
             //ERRORE!
         }
@@ -94,9 +103,9 @@ void pager(){
 
     if(cause_reg != TLBINVLDL && cause_reg != TLBINVLDS){ //invalid modification
 
-        program_trap_exHandle();
+        program_trap_exHandler();
     }else{
-        sys_p(&swp_sem);
+        SYSCALL(PASSEREN, &swp_sem, 0, 0);
         int missing_page_entryHI = state_reg->entry_hi; //campo entryHI contenente la pagina virtuale che ha causato il page fault
         int p = inspecteHI(missing_page_entryHI); //numero pagina virtuale non trovata (che ha causato page fault)
         
@@ -152,7 +161,7 @@ void pager(){
         //modifico bit V(page present = 1) 
         support_struct->sup_privatePgTbl[pos_p].pte_entryLO = support_struct->sup_privatePgTbl[pos_p].pte_entryLO | VALIDbitV;
         //modifico PFN(sta occupando pagina 'frame_to_replace')
-        support_struct->sup_privatePgTbl[pos_p].pte_entryHI = (support_struct->sup_privatePgTbl[pos_p].pte_entryHI & 0b00000000000000000000111111111111) | (unsigned int)*frame_to_replace;
+        support_struct->sup_privatePgTbl[pos_p].pte_entryHI = current_proc->p_supportStruct->sup_asid | ((unsigned int)frame_to_replace << 12);
 
         /**Update the TLB. The cached entry in the TLB for the Current Process’s
         page p is clearly out of date; it was just updated in the previous step.*/
@@ -161,7 +170,7 @@ void pager(){
     /**FINO A QUI (atomicamente)*/
         atomOFF();
 
-        sys_v(&swp_sem);
+        SYSCALL(VERHOGEN, & swp_sem, 0, 0);
         LDST(state_reg);
     }
 
