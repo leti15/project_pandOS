@@ -43,12 +43,12 @@ void test(){
 
 void initPGTBL(pteEntry_t* pgtable, int asid){
     for (int i = 0; i < MAXPAGES-1; i += 1){
-        pgtable[i].pte_entryHI = ((0x80000 + i) >> 12) & asid;
-        pgtable[i].pte_entryLO = 5; // = 0b00000000000000000000000000000101 ( D bit = 1, V bit = 0, G bit = 1 ) 
+        pgtable[i].pte_entryHI = ((0x80000 + i) << 12) | asid;
+        pgtable[i].pte_entryLO = 0b00000000000000000000010100000000; //( D bit = 1, V bit = 0, G bit = 1 ) 
     }
     //stack page
-    pgtable[MAXPAGES].pte_entryHI = ((0xBFFFF + MAXPAGES-1) >> 12) & asid;
-    pgtable[MAXPAGES].pte_entryLO = 5; // = 0b00000000000000000000000000000101 ( D bit = 1, V bit = 0, G bit = 1 ) 
+    pgtable[MAXPAGES].pte_entryHI = ((0xBFFFF + MAXPAGES-1) << 12) | asid;
+    pgtable[MAXPAGES].pte_entryLO = 0b00000000000000000000010100000000; //( D bit = 1, V bit = 0, G bit = 1 ) 
 }
 
 void init_supLevSem(){

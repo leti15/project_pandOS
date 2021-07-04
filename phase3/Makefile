@@ -1,53 +1,41 @@
-#$Id: Makefile,v 1.2 2004/05/01 14:53:48 morsiani Exp morsiani $
-# Makefile for mipsel-linux
-#
+XT_PRG_PREFIX = mipsel-linux-gnu-
+CC = $(XT_PRG_PREFIX)gcc
+LD = $(XT_PRG_PREFIX)ld
+
+
 ifneq ($(wildcard /usr/bin/umps3),)
 	UMPS3_DIR_PREFIX = /usr
-	LIBDIR = $(UMPS3_DIR_PREFIX)/lib/x86_64-linux-gnu/umps3
 else
 	UMPS3_DIR_PREFIX = /usr/local
-	LIBDIR = $(UMPS3_DIR_PREFIX)/lib/umps3
 endif
 
-INCDIR = $(UMPS3_DIR_PREFIX)/include/umps3/umps
-SUPDIR = $(UMPS3_DIR_PREFIX)/share/umps3
+UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
+UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
+UPMS3_INCLUDE_DIR2 = $(UMPS3_DIR_PREFIX)/include
 
-TDEFS = h/print.h h/tconst.h $(INCDIR)/libumps.e Makefile
+CFLAGS_LANG = -ffreestanding
+CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -G 0 -mno-abicalls -fno-pic -mfp32
+CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_INCLUDE_DIR2) -Wall -O0
 
-CFLAGS = -ffreestanding -ansi -c -mips1 -mabi=32 -mfp32 -mno-gpopt -G 0 -fno-pic -mno-abicalls
-# -Wall
 
-LDAOUTFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpsaout.ldscript
-LDCOREFLAGS =  -G 0 -nostdlib -T $(SUPDIR)/umpscore.ldscript
+LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript
 
-CC = mipsel-linux-gnu-gcc
-LD = mipsel-linux-gnu-ld
-AS = mipsel-linux-gnu-as -KPIC
 
-EF = umps3-elf2umps
-UDEV = umps3-mkdev
+VPATH = $(UMPS3_DATA_DIR)
 
-#main target
-all: printerTest.umps strConcat.umps \
-	fibEight.umps fibEleven.umps \
-	terminalTest2.umps terminalTest3.umps terminalTest4.umps \
-	terminalTest5.umps  \
+.PHONY : all clean
 
+
+all : kernel.core.umps
+
+kernel.core.umps : kernel
+	umps3-elf2umps -k $<
 	
+kernel : initial.o initProc.o vmSupport.o sysSupport.o exceptions_handler.o scheduler.o commons.o asl.o pcb.o crtso.o libumps.o
+	$(LD) -o $@ $^ $(LDFLAGS)
 	
-%.o: %.c $(TDEFS)
-	$(CC) $(CFLAGS) $<
+clean :
+	-rm -f *.o kernel kernel.*.umps
 	
-%.t: %.o print.o  $(LIBDIR)/crti.o
-	$(LD) $(LDAOUTFLAGS) $(LIBDIR)/crti.o $< print.o $(LIBDIR)/libumps.o -o $@
-	
-%.t.aout.umps: %.t
-	$(EF) -a $<
-
-%.umps: %.t.aout.umps
-	$(UDEV) -f $@ $<
-
-
-clean:
-	rm -f *.o *.t *.umps
-
+%.o : %.S
+	$(CC) $(CFLAGS) -c -o $@ $<

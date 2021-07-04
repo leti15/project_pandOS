@@ -25,17 +25,6 @@ void update_TLB(){
     TLBCLR();
 }
 
-//da implementare
-void update_BackingStore(swap_t* frame, int owner_process){
- /**DA FARE:
-         *  1.leggo contenuto pagina (non so come)
-         *  2.se errore in lettura -> chiama program trap handler
-         * 
-         */
-
-
-}
-
 /**
  * se 'readMode' è 1, legge il contenuto della pagina fisica relativa alla pagina virtuale 'virtualPG' (dalla page table da 'support_process') e lo salva in 'frame';
  * se 'readmode' è 0, scrive il contenuto di 'frame' nella pagina fisica relativa alla pagina virtuale 'virtualPG' (della page table da 'support_process')
@@ -161,7 +150,7 @@ void pager(){
         //modifico bit V(page present = 1) 
         support_struct->sup_privatePgTbl[pos_p].pte_entryLO = support_struct->sup_privatePgTbl[pos_p].pte_entryLO | VALIDbitV;
         //modifico PFN(sta occupando pagina 'frame_to_replace')
-        support_struct->sup_privatePgTbl[pos_p].pte_entryHI = current_proc->p_supportStruct->sup_asid | ((unsigned int)frame_to_replace << 12);
+        support_struct->sup_privatePgTbl[pos_p].pte_entryHI = support_struct->sup_asid | ((unsigned int)frame_to_replace << 12);
 
         /**Update the TLB. The cached entry in the TLB for the Current Process’s
         page p is clearly out of date; it was just updated in the previous step.*/

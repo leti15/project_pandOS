@@ -4,8 +4,9 @@ support_t* support_except;
 state_t* state_except;
 
 void general_exHandler(){
-    state_except = (state_t*) &(current_proc->p_supportStruct->sup_exceptState[GENERALEXCEPT]);
-    int exCode = CAUSE_GET_EXCCODE(current_proc->p_supportStruct->sup_exceptState->cause);//nonn so se va bene o no prenderlo dal current process
+    support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
+    state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
+    int exCode = CAUSE_GET_EXCCODE(support_except->sup_exceptState->cause);//non so se va bene o no prenderlo dal current process
     
     if (exCode >=9 && exCode <=13){
         syscall_exHandler(exCode);
@@ -15,7 +16,6 @@ void general_exHandler(){
 }
 
 void syscall_exHandler(int sysCode){
-    support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
 
     if(sysCode == 9){ //SYSCALL (TERMINATE, 0, 0, 0);
         SYSCALL (TERMPROCESS, 0, 0, 0);
