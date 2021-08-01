@@ -5,6 +5,9 @@
 #include "commons.h"
 #include "scheduler.h"
 #include "exceptions_handler.h"
+#include "vmSupport.h"
+#include "sysSupport.h"
+#include "initProc.h"
 
 extern void uTLB_RefillHandler();
 extern void exception_handler();

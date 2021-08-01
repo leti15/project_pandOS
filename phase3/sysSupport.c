@@ -16,8 +16,11 @@ void general_exHandler(){
 }
 
 void syscall_exHandler(int sysCode){
-
+    support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
     if(sysCode == 9){ //SYSCALL (TERMINATE, 0, 0, 0);
+        //rendo invalide le pagine utilizzate dal processo da eliminare
+        for (int i = 0; i<MAXPAGES; i += 1)
+            support_except->sup_privatePgTbl[i].pte_entryLO = support_except->sup_privatePgTbl[i].pte_entryLO & 0b11111111111111111111110111111111;
         SYSCALL (TERMPROCESS, 0, 0, 0);
     }
     else if(sysCode == 10){

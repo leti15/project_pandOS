@@ -58,22 +58,28 @@ int check_dev_semAdd(int* semAdd){
 /**
  * Estraggo il numero di pagina virtuale data la entryHI, se == 255 allora ....??
 */
-int inspecteHI(int entryHi){
-  entryHi = (entryHi >> 12) && 00000000000000000011; //volevate fare l'and logico (bit a bit)?? perchè quello è solo con &, non && 
+pteEntry_t inspecteHI(int VP, support_t* support_struct){
+  /*entryHi = (entryHi >> 12) && 00000000000000000011; //volevate fare l'and logico (bit a bit)?? perchè quello è solo con &, non && 
   if (entryHi == 255) 
     return 31;
   else 
-    return entryHi;
+    return entryHi;*/
+
+    for (int i = 0; i< MAXPAGES; i+= 1){
+      if((support_struct->sup_privatePgTbl[i].pte_entryHI >> 12) == VP)
+        return (support_struct->sup_privatePgTbl[i]);
+    }
+    
 }
 
 void atomON(){
   state_t* state_reg = (state_t *)BIOSDATAPAGE;
   //disabilito interrupts
-  setStatus(state_reg->status & DISABLEINTERRUPTS);
+  setSTATUS(state_reg->status & DISABLEINTERRUPTS);
 }
 
 void atomOFF(){
   state_t* state_reg = (state_t *)BIOSDATAPAGE;
   //riabilito interrupts
-  setStatus( state_reg->status = state_reg->status & ENABLEINTERRUPTS);
+  setSTATUS (state_reg->status = state_reg->status & ENABLEINTERRUPTS);
 }

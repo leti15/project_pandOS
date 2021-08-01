@@ -14,16 +14,17 @@
 state_t *state_reg;
 
 void uTLB_RefillHandler(){
-    state_reg = (state_t *)BIOSDATAPAGE;
-    
-    int missing_page = state_reg->entry_hi;
-    pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[inspecteHI(missing_page)];
+    //state_reg = (state_t *)BIOSDATAPAGE;
+    support_t* support_struct = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    int owner = (support_struct->sup_exceptState[PGFAULTEXCEPT].entry_hi) & 0b00000000000000000000111111111111;
+    int missing_page = (support_struct->sup_exceptState[PGFAULTEXCEPT].entry_hi) >> 12;
+    pteEntry_t new_pgEntry = inspecteHI(missing_page, support_struct);
 
     setENTRYHI( (unsigned int) &new_pgEntry.pte_entryHI);
     setENTRYLO( (unsigned int) &new_pgEntry.pte_entryLO);
     TLBWR();
 
-    LDST(state_reg);
+    LDST(support_struct->sup_exceptState[PGFAULTEXCEPT]);
 }
 
 void exception_handler()
