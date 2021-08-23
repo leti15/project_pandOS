@@ -43,12 +43,18 @@ int main()
 
     LDIT(100000);  // setto interval timer di 100 millisecondi (=100000 microsecondi)
     
+    boo();
+    
     // inizializzo il primo processo
     pcb_PTR p = allocPcb();
     proc_count = 1;
     p->p_s.status = STATE_INIT; 
     p->p_time = 0;
     p->p_semAdd = NULL;
+    p->p_child = NULL;
+    p->p_next_sib = NULL;
+    p->p_prev_sib = NULL;
+    p->p_prnt = NULL;
     p->p_s.pc_epc = (memaddr) test; // PC set to the address of test()
     p->p_s.gpr[24] = (memaddr) test;
     RAMTOP(p->p_s.gpr[26]); 

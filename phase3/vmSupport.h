@@ -13,10 +13,11 @@
 extern int swp_sem;
 extern swap_t*  spt;
 
+void uTLB_RefillHandler();
 void init_spt();
-swap_t* replacement_FIFO();
+int replacement_FIFO();
 void update_TLB();
-unsigned int ReadWrite_from_backStore(swap_t* frame, pteEntry_t* page_table, int processID, int virtualPG, unsigned int PFN, int readMode);
+unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned int to_write_or_read, int readMode);
 void pager();
 
 #endif

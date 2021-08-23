@@ -12,7 +12,7 @@
              * 
             */
 state_t *state_reg;
-
+/*
 void uTLB_RefillHandler(){
     //state_reg = (state_t *)BIOSDATAPAGE;
     support_t* support_struct = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
@@ -26,7 +26,7 @@ void uTLB_RefillHandler(){
 
     LDST(support_struct->sup_exceptState[PGFAULTEXCEPT]);
 }
-
+*/
 void exception_handler()
 { //appena entra qui e' in kernel mode con interrupt disabilitati!!!
 
@@ -38,14 +38,17 @@ void exception_handler()
     //in base all' exCode capisco cosa fare
     if (exCode == 0)
     {
+        bp();
         interrupt_handler();
     } //External Device Interrupt
     else if (exCode >= 1 && exCode <= 3)
     {
+        b5();
         PassUpOrDie(PGFAULTEXCEPT);
     } //eccezioni TLB
     else if ((exCode > 3 && exCode < 8) || (exCode > 8 && exCode < 13))
     {
+        b6();
         PassUpOrDie(GENERALEXCEPT);
     } //program trap exception handler
     else if (exCode == 8)
@@ -69,40 +72,43 @@ void SYS_handler()
 
         int current_a0 = state_reg->reg_a0;
         if (current_a0 == 1) //create process    SYSCALL(CREATEPROCESS, &current_proc->p_s, current_proc->p_supportStruct, 0);
-        {
+        {   bp1();
             if(state_reg->reg_a1 == (int)NULL){sys_terminate();}
             pcb_PTR newProc = allocPcb(); //creo la stuttura per il nuovo processo
-
+            bp2();
             if (newProc == NULL) { state_reg->reg_v0 = -1; } //non ci sono pcb liberi= mancanza risorse
             else{
+
+                bp1();
+
+                if(proc_count == 1)
+                    current_proc->p_child = NULL;
+
                 //setto campi del nuovo pcb
-                
                 insertChild(current_proc, newProc);
-
+            
+                bp2();
+                
                 newProc->p_time = 0;
-                
                 newProc->p_supportStruct = (support_t *)state_reg->gpr[5];
-
                 state_t *temp = (state_t *)state_reg->gpr[4];
-                
                 newProc->p_s = *temp;
-                
                 newProc->p_semAdd = NULL;
-                
                 insertProcQ(&readyQ, newProc); //loinserisco nella readyQ
+                
+                bp3();
 
                 state_reg->reg_v0 = 0;
-
                 proc_count = proc_count + 1; //incremento il contatore dei processi attivi
-            
-            
+
+                bp();
             }
 
+            bp3();
             LDST(state_reg);
         }
         else if (current_a0 == 2) //terminate process SYSCALL(TERMPROCESS, 0, 0, 0);
         {
-
             sys_terminate();
         }
         else if (current_a0 == 3) //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
@@ -112,7 +118,6 @@ void SYS_handler()
         else if (current_a0 == 4) //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
         {
             pcb_PTR temp = sys_v((int *)state_reg->reg_a1);
-
             LDST(state_reg);
         }
         else if (current_a0 == 5) //wait for IO    SYSCALL(IOWAIT, intlNo, dnum, termRead);
@@ -142,7 +147,6 @@ void SYS_handler()
         }
         else if (current_a0 == 6) //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
         {
-
             //AGGIORNIAMO CPU TIME
             unsigned int tmp = STCK(tmp);
             state_reg->gpr[1] = current_proc->p_time + tmp - count_time;
@@ -151,7 +155,6 @@ void SYS_handler()
         }
         else if (current_a0 == 7) //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
         {
-
             //incrementiamo softblocked se è un semAdd di device
             softB_count = softB_count + 1;
 
@@ -171,8 +174,8 @@ void SYS_handler()
         else if (current_a0 == 8) //get support data     p_support = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
         {
             sys_8();
-            //state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
-            //LDST(state_reg);
+            /*state_reg->reg_v0 = &(current_proc->p_supportStruct);
+            LDST(state_reg);*/
         }
         else
         {
@@ -357,7 +360,7 @@ int interrupt_handler()
 }
 
 void sys_8(){
-    state_reg->gpr[1] = (unsigned int)current_proc->p_supportStruct;
+    state_reg->reg_v0 = (unsigned int)current_proc->p_supportStruct;
     LDST(state_reg);
 }
 

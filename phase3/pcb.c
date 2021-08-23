@@ -2,6 +2,7 @@
 
 static pcb_t pcbFree_table[MAXPROC];
 static pcb_PTR pcbFree_h;
+extern void bp();
 
 /*Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
  * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/
@@ -93,7 +94,6 @@ int emptyProcQ(pcb_t* tp) {
  * La doppia indirezione su tp serve per poter inserire p come ultimo elemento della coda.*/
 void insertProcQ(pcb_t** tp, pcb_t* p){
     if (tp != NULL && p != NULL){
-        //breakPoint2();
         pcb_PTR sent = *tp;
 
         if (sent != NULL){//coda NON vuota
@@ -211,31 +211,38 @@ int emptyChild(pcb_t *p){
 
 /*Inserisce il PCB puntato da p come figlio del PCB puntato da prnt.*/
 void insertChild(pcb_t *prnt, pcb_t *p)
-{
+{   
     if (prnt != NULL && p != NULL)
-    {
+    {   bp();
         if(prnt->p_child != NULL)
-        {
+        {   bp1();
+            //troviamo il pcb esistente che punter� al nuovo pcb
+            pcb_t * last = prnt->p_child->p_prev_sib;
+            bp3();
 
-            //troviamo il ptb esistente che punter� al nuovo ptb
-            
-            pcb_PTR last = prnt->p_child->p_prev_sib;
+
+            if(last == NULL)
+                boo();
+
             //l'ultimo figlio punta al nuovo figlio
             last->p_next_sib = p;
+
             
+
             p->p_prev_sib = last;
             p->p_prnt = prnt;
             p->p_next_sib = prnt->p_child;
             prnt->p_child->p_prev_sib = p;
            
         }else{
+            bp();
             prnt->p_child = p;
             p->p_prnt = prnt;
             p->p_prev_sib = p;
             p->p_next_sib = p;
         }
     }
-
+bp3();
 }
 
 /*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/

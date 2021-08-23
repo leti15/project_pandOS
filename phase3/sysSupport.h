@@ -8,6 +8,7 @@
 #include "scheduler.h"
 #include "vmSupport.h"
 
+void bp();
 void general_exHandler();
 void syscall_exHandler(int sysCode);
 void program_trap_exHandler();

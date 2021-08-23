@@ -2,7 +2,17 @@
 
 support_t* support_except;
 state_t* state_except;
+extern int masterSEM;
+extern void pager();
 
+void bp(){};
+void bp1(){};
+void bp2(){};
+void bp3(){};
+void b4(){};
+void b5(){};
+void b6(){};
+void boo(){};
 void general_exHandler(){
     support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
     state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
@@ -16,11 +26,12 @@ void general_exHandler(){
 }
 
 void syscall_exHandler(int sysCode){
-    support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
+    support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     if(sysCode == 9){ //SYSCALL (TERMINATE, 0, 0, 0);
         //rendo invalide le pagine utilizzate dal processo da eliminare
         for (int i = 0; i<MAXPAGES; i += 1)
             support_except->sup_privatePgTbl[i].pte_entryLO = support_except->sup_privatePgTbl[i].pte_entryLO & 0b11111111111111111111110111111111;
+        SYSCALL(VERHOGEN, &masterSEM, 0, 0);
         SYSCALL (TERMPROCESS, 0, 0, 0);
     }
     else if(sysCode == 10){
@@ -77,23 +88,28 @@ void syscall_exHandler(int sysCode){
             SYSCALL (TERMPROCESS, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
-            char stringa[state_except->reg_a2];
-            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
+            char* stringa = (char*) state_except->reg_a1;
+            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid - 1);
             int return_msg, i = 0;
 
             //ottengo mutua esclsione sul device register
-            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid], 0, 0);
+            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid - 1], 0, 0);
 
-            while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
+            //while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
+            while ( i < state_except->reg_a2)
             {
-                base_regdev->term.transm_command = (stringa[i] >> 8) | 2;
-                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, FALSE);
+                atomON();
+                base_regdev->term.transm_command = (*stringa<< 8) | 2;
+                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, FALSE);
+                atomOFF();
+                stringa += 1;
                 i += 1;
             }
 
             //rilascio mutua esclusione sul semaforo del device register
-            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid], 0, 0);
+            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid - 1], 0, 0);
 
+            return_msg &= 0xFF; //elimino la parte transmit char e mi rimane solo la parte transmit status
             if (return_msg != READY && return_msg != 5){
                 //qualcosa è andato storto
                 state_except->reg_v0 = return_msg;
@@ -121,7 +137,7 @@ void syscall_exHandler(int sysCode){
             while ((return_msg == READY || return_msg == 5) && rcv_char != EOS)
             {   char new_stringa[i+1];
                 base_regdev->term.recv_command = 2;
-                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid, TRUE);
+                return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, TRUE);
                 rcv_char = base_regdev->term.recv_status >> 8;
                 stringa = addCharRecvd(stringa, i, rcv_char, new_stringa);
                 i += 1;
