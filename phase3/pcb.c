@@ -62,6 +62,7 @@ pcb_t *allocPcb(){
             pcbFree_h = pcbFree_h->p_next;
         }else { pcbFree_h = NULL; } //se � l'ultimo elemento metto la sentinella a null
 
+/*
         //reset di tmp
         tmp->p_child = NULL;
         tmp->p_next = NULL;
@@ -71,8 +72,7 @@ pcb_t *allocPcb(){
         tmp->p_prnt = NULL;
         tmp->p_semAdd = NULL;
         tmp->p_time = 0;
-        tmp->p_supportStruct = NULL;
-
+        tmp->p_supportStruct = NULL;*/
         return tmp;
     }
 }
@@ -237,8 +237,12 @@ void insertChild(pcb_t *prnt, pcb_t *p)
         }else{
             bp();
             prnt->p_child = p;
+            b4();
+            //il problema è qui (DBE)
             p->p_prnt = prnt;
+            b5();
             p->p_prev_sib = p;
+            b6();
             p->p_next_sib = p;
         }
     }

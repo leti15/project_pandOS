@@ -7,10 +7,16 @@ support_t* support_struct;
 
 void uTLB_RefillHandler(){
     state_reg = (state_t *)BIOSDATAPAGE;
-    support_t* support_struct = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
-    int missing_page = state_reg->entry_hi >> 12;
+    bp();
+
+    int missing_page = ( state_reg->entry_hi - 0x80000000 ) >> 12;
+
+    bp1();
+
     pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[missing_page];
+
+    bp2();
 
     setENTRYHI( (unsigned int) new_pgEntry.pte_entryHI);
     setENTRYLO( (unsigned int) new_pgEntry.pte_entryLO);
