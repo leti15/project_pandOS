@@ -11,7 +11,6 @@
 #include "initProc.h"
 
 extern int swp_sem;
-extern swap_t*  spt;
 
 void uTLB_RefillHandler();
 void init_spt();

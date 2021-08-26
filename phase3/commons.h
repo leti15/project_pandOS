@@ -2,6 +2,7 @@
 #define COMMONS_H
 //#include <stddef.h>
 #include "pandos_types.h"
+#include <umps3/umps/libumps.h>
 
 #ifndef __SIZE_TYPE__
 #define __SIZE_TYPE__ long unsigned int
@@ -45,6 +46,10 @@ typedef __SIZE_TYPE__ size_t;
 #define DISABLEINTERRUPTS 0b11111111111111111111111111111110
 #define ENABLEINTERRUPTS 0b00000000000000000000000000000001
 
+#define VPNBASE 0x80000000
+#define STACKPG 0xBFFFF000
+#define Nproc 1
+
 extern int devicesem[DEVARRSIZE];
 extern int count_time;
 extern int proc_count;
@@ -53,6 +58,16 @@ extern pcb_PTR readyQ;
 extern pcb_PTR current_proc;
 extern passupvector_t* PUV;
 extern int devRegSem[8];
+
+
+extern void bp();
+extern void bp1();
+extern void bp2();
+extern void bp3();
+extern void b4();
+extern void b5();
+extern void b6();
+extern void boo();
 
 /** puntatore alla coda dei semafori attivi 'semd_h' */
 

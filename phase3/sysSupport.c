@@ -13,10 +13,15 @@ void b4(){};
 void b5(){};
 void b6(){};
 void boo(){};
+
+int global4;
+
 void general_exHandler(){
     support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
     state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
     int exCode = CAUSE_GET_EXCCODE(support_except->sup_exceptState->cause);//non so se va bene o no prenderlo dal current process
+    
+    global4= exCode;
     
     if (exCode >=9 && exCode <=13){
         syscall_exHandler(exCode);
