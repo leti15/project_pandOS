@@ -15,13 +15,14 @@ void b6(){};
 void boo(){};
 
 int global4;
+int global5;
 
 void general_exHandler(){
     support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
     state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
-    int exCode = CAUSE_GET_EXCCODE(support_except->sup_exceptState->cause);//non so se va bene o no prenderlo dal current process
-    
-    global4= exCode;
+
+    //int exCode = CAUSE_GET_EXCCODE(state_except->cause);//non so se va bene o no prenderlo dal current process
+    int exCode = state_except->reg_a0;
     
     if (exCode >=9 && exCode <=13){
         syscall_exHandler(exCode);
@@ -89,10 +90,9 @@ void syscall_exHandler(int sysCode){
     else if(sysCode == 12){
         //SYSCALL (WRITETERMINAL, char *virtAddr,int len, 0)
  
-        if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
-            SYSCALL (TERMPROCESS, 0, 0, 0);
-        }else{
+        if(state_except->reg_a2 >= 0 && state_except->reg_a2 <= 128 && state_except->reg_a1 >= VPNBASE && state_except->reg_a1 <= USERSTACKTOP){
             //parametri corretti, posso procedere
+            global5= state_except->reg_a1;
             char* stringa = (char*) state_except->reg_a1;
             devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid - 1);
             int return_msg, i = 0;
@@ -106,6 +106,7 @@ void syscall_exHandler(int sysCode){
                 atomON();
                 base_regdev->term.transm_command = (*stringa<< 8) | 2;
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, FALSE);
+                boo();
                 atomOFF();
                 stringa += 1;
                 i += 1;
@@ -122,6 +123,9 @@ void syscall_exHandler(int sysCode){
                 //stringa stampata correttamente
                 state_except->reg_v0 = i; //numero caratteri trasmessi (non conto l'EOS)
             }
+        } else{
+            global5 = state_except->reg_a1;
+            SYSCALL (TERMPROCESS, 0, 0, 0);
         }
     }
     else if(sysCode == 13){

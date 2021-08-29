@@ -49,6 +49,7 @@ void exception_handler()
     else if ((exCode > 3 && exCode < 8) || (exCode > 8 && exCode < 13))
     {
         b6();
+        
         PassUpOrDie(GENERALEXCEPT);
     } //program trap exception handler
     else if (exCode == 8)
