@@ -3,6 +3,7 @@
 
 
 int devRegSem[8];
+int supLevDeviceSem[48];
 int masterSEM;
 
 
@@ -71,4 +72,9 @@ void init_supLevSem(){
     for (int i = 0; i < Nproc; i += 1)
         devRegSem[i] = 1;
     masterSEM = 0;
+    
+    for (int i = 0; i <= 48 ; i+=1)
+        supLevDeviceSem[i] = 1;
+
+
 }

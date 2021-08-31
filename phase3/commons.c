@@ -73,13 +73,13 @@ pteEntry_t inspecteHI(int VP, support_t* support_struct){
 }
 
 void atomON(){
-  state_t* state_reg = (state_t *)BIOSDATAPAGE;
+  unsigned int status = getSTATUS();
   //disabilito interrupts
-  setSTATUS(state_reg->status & DISABLEINTERRUPTS);
+  setSTATUS(status & DISABLEINTS);
 }
 
 void atomOFF(){
-  state_t* state_reg = (state_t *)BIOSDATAPAGE;
+  unsigned int status = getSTATUS();
   //riabilito interrupts
-  setSTATUS (state_reg->status = state_reg->status & ENABLEINTERRUPTS);
+  setSTATUS (status | IECON);
 }

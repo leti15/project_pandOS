@@ -2,6 +2,7 @@
 
 support_t* support_except;
 state_t* state_except;
+extern int supLevDeviceSem[48];
 extern int masterSEM;
 extern void pager();
 
@@ -89,22 +90,29 @@ void syscall_exHandler(int sysCode){
     }
     else if(sysCode == 12){
         //SYSCALL (WRITETERMINAL, char *virtAddr,int len, 0)
- 
+        boo();
         if(state_except->reg_a2 >= 0 && state_except->reg_a2 <= 128 && state_except->reg_a1 >= VPNBASE && state_except->reg_a1 <= USERSTACKTOP){
             //parametri corretti, posso procedere
             global5= state_except->reg_a1;
+            bp1();
             char* stringa = (char*) state_except->reg_a1;
-            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid - 1);
+            bp2();
+            devreg_t* base_regdev = GET_devAddrBase(7, support_except->sup_asid - 1);
+            bp3();
             int return_msg, i = 0;
-
+            bp();
             //ottengo mutua esclsione sul device register
-            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid - 1], 0, 0);
+            SYSCALL(PASSEREN, &supLevDeviceSem[32 + support_except->sup_asid - 1], 0, 0);
 
             //while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
             while ( i < state_except->reg_a2)
             {
                 atomON();
-                base_regdev->term.transm_command = (*stringa<< 8) | 2;
+                global4= base_regdev;
+                global5 = (*stringa<< 8) | 2;
+                b4();
+                base_regdev->term.transm_command = (unsigned int) (*stringa << 8) | TRANSMITCHAR;
+                b5();
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, FALSE);
                 boo();
                 atomOFF();
@@ -113,7 +121,7 @@ void syscall_exHandler(int sysCode){
             }
 
             //rilascio mutua esclusione sul semaforo del device register
-            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid - 1], 0, 0);
+            SYSCALL(VERHOGEN, &supLevDeviceSem[32 + support_except->sup_asid - 1], 0, 0);
 
             return_msg &= 0xFF; //elimino la parte transmit char e mi rimane solo la parte transmit status
             if (return_msg != READY && return_msg != 5){
