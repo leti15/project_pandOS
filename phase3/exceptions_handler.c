@@ -149,9 +149,12 @@ void SYS_handler()
                 sys_terminate();
             }
 
+            b4();
+
             int intlNo = state_reg->reg_a1, dnum = state_reg->reg_a2;
             int dev_pos = (intlNo - 3) * 8 + dnum;
 
+            b5();
             if (state_reg->reg_a3 == 1)
             {
                 dev_pos = dev_pos + 8;
@@ -162,6 +165,8 @@ void SYS_handler()
                 sys_terminate();
             }
 
+            b6();
+            
             sys_p(&devicesem[dev_pos]);
         }
         else if (current_a0 == 6) //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);

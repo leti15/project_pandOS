@@ -93,35 +93,27 @@ void syscall_exHandler(int sysCode){
         boo();
         if(state_except->reg_a2 >= 0 && state_except->reg_a2 <= 128 && state_except->reg_a1 >= VPNBASE && state_except->reg_a1 <= USERSTACKTOP){
             //parametri corretti, posso procedere
-            global5= state_except->reg_a1;
-            bp1();
             char* stringa = (char*) state_except->reg_a1;
-            bp2();
-            devreg_t* base_regdev = GET_devAddrBase(7, support_except->sup_asid - 1);
-            bp3();
+            int position = 32 + support_except->sup_asid - 1;
+            devreg_t* base_regdev = 0x10000054 + (4 * 0x80) + ((support_except->sup_asid - 1) * 0x10);
             int return_msg, i = 0;
-            bp();
             //ottengo mutua esclsione sul device register
-            SYSCALL(PASSEREN, &supLevDeviceSem[32 + support_except->sup_asid - 1], 0, 0);
+            SYSCALL(PASSEREN, &supLevDeviceSem[position], 0, 0);
 
             //while ( i < state_except->reg_a2 && stringa[i] != EOS && (return_msg == READY || return_msg == 5))
             while ( i < state_except->reg_a2)
             {
                 atomON();
-                global4= base_regdev;
-                global5 = (*stringa<< 8) | 2;
-                b4();
-                base_regdev->term.transm_command = (unsigned int) (*stringa << 8) | TRANSMITCHAR;
-                b5();
+                int command = (unsigned int) (*stringa << 8) + TRANSMITCHAR;
+                base_regdev->term.transm_command = command;
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, FALSE);
-                boo();
                 atomOFF();
                 stringa += 1;
                 i += 1;
             }
 
             //rilascio mutua esclusione sul semaforo del device register
-            SYSCALL(VERHOGEN, &supLevDeviceSem[32 + support_except->sup_asid - 1], 0, 0);
+            SYSCALL(VERHOGEN, &supLevDeviceSem[position], 0, 0);
 
             return_msg &= 0xFF; //elimino la parte transmit char e mi rimane solo la parte transmit status
             if (return_msg != READY && return_msg != 5){
@@ -132,43 +124,55 @@ void syscall_exHandler(int sysCode){
                 state_except->reg_v0 = i; //numero caratteri trasmessi (non conto l'EOS)
             }
         } else{
-            global5 = state_except->reg_a1;
             SYSCALL (TERMPROCESS, 0, 0, 0);
         }
     }
     else if(sysCode == 13){
         //SYSCALL (READTERMINAL, char *virtAddr,0, 0)
-         if( state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
+         if( state_except->reg_a1 < VPNBASE || state_except->reg_a1 > USERSTACKTOP ){
             SYSCALL (TERMPROCESS, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
-            char initial_stringa = EOS;
-            char *stringa = &initial_stringa;
-            char rcv_char = '0';
-            devreg_t* base_regdev = GET_devAddrBase(6, support_except->sup_asid);
-            int return_msg, i = 1;
+            char* stringa = state_except->reg_a1;
+            char rcv_char = EOS;
+            int position = 40 + support_except->sup_asid - 1;
+            devreg_t* base_regdev = 0x10000054 + (4 * 0x80) + ((support_except->sup_asid - 1) * 0x10);
+            int return_msg, counter_char = 0;
 
             //ottengo mutua esclsione sul device register
-            SYSCALL(PASSEREN, &devRegSem[support_except->sup_asid], 0, 0);
+            SYSCALL(PASSEREN, &supLevDeviceSem[position], 0, 0);
 
-            while ((return_msg == READY || return_msg == 5) && rcv_char != EOS)
-            {   char new_stringa[i+1];
-                base_regdev->term.recv_command = 2;
+            //while ((return_msg == READY || return_msg == 5) && rcv_char != EOS)
+            int statusBIT = base_regdev->term.recv_status & RECVSTATUSBIT;
+            while (TRUE)
+            {  
+                atomON();
+                base_regdev->term.recv_command = TRANSMITCHAR;
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, TRUE);
-                rcv_char = base_regdev->term.recv_status >> 8;
-                stringa = addCharRecvd(stringa, i, rcv_char, new_stringa);
-                i += 1;
+                atomOFF();
+                //statusBIT = base_regdev->term.recv_status & RECVSTATUSBIT;
+                rcv_char = (base_regdev->term.recv_status >> 8) & RECVSTATUSBIT;
+               
+                if (rcv_char == '\n'){
+                    boo();
+                    /**(stringa + counter_char*sizeof(char)) = EOS;
+                    atomON();
+                    base_regdev->term.recv_status = (rcv_char << 8) | READY;
+                    atomOFF();*/
+                    break;
+                }
+                *stringa = rcv_char;
+                stringa++;
+                //*(stringa + counter_char * sizeof(char)) = rcv_char;
+                counter_char += 1;
             }
-
             //rilascio mutua esclusione sul semaforo del device register
-            SYSCALL(VERHOGEN, &devRegSem[support_except->sup_asid], 0, 0);
+            SYSCALL(VERHOGEN, &supLevDeviceSem[position], 0, 0);
 
-            if (return_msg != 5){
-                //qualcosa è andato storto
+            if (return_msg != 5){ //qualcosa è andato storto
                 state_except->reg_v0 = return_msg;
-            }else{
-                //stringa stampata correttamente
-                state_except->reg_v0 = i-1; //numero caratteri ricevuti (sottraggo il carattere EOS)
+            }else{ //stringa stampata correttamente
+                state_except->reg_v0 = counter_char; //numero caratteri ricevuti (sottraggo il carattere EOS)
             }
         }
     }
@@ -183,12 +187,10 @@ void program_trap_exHandler(){
     sys_terminate();
 }
 
-char* addCharRecvd(char stringa[], int len, char c, char new_stringa[]){
+void addCharRecvd(char stringa[], int len, char c, char new_stringa[]){
     for (int i = 0; i< len-1; i += 1){
         new_stringa[i] = stringa[i];
     }
     new_stringa[len-1] = c;
     new_stringa[len] = EOS;
-    return new_stringa;
-
 }

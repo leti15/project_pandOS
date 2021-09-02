@@ -12,6 +12,6 @@ void bp();
 void general_exHandler();
 void syscall_exHandler(int sysCode);
 void program_trap_exHandler();
-char* addCharRecvd(char stringa[], int len, char c, char new_stringa[]);
+void addCharRecvd(char stringa[], int len, char c, char new_stringa[]);
 
 #endif
