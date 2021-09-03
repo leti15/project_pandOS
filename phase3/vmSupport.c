@@ -13,6 +13,7 @@ void uTLB_RefillHandler(){
     bp();
 
     int missing_page = state_reg->entry_hi;
+    missing_global = missing_page;
     if (missing_page <= 0xC0000000 && missing_page >= STACKPG)
         missing_page = 31;
     else

@@ -6,6 +6,19 @@ extern int supLevDeviceSem[48];
 extern int masterSEM;
 extern void pager();
 
+
+/**     supLevDeviceSem[48] :      
+             * 0-7: DEVICE LINEA 3
+             * 8-15:DEVICE LINEA 4
+             * 16-23: DEVICE LINEA 5
+             * 24-31: DEVICE LINEA 6
+             * 32-47: DEVICE LINEA 7 (TERMINALI)
+             *      32-39: TERMINALI IN SCRITTURA=WRITE
+             *      40-47: TERMINALI IN LETTURA=READ
+             * 48: DEVICE INTERVAL TIMER
+             * 
+            */
+
 void bp(){};
 void bp1(){};
 void bp2(){};
@@ -17,6 +30,7 @@ void boo(){};
 
 int global4;
 int global5;
+char global6;
 
 void general_exHandler(){
     support_except = SYSCALL(GETSUPPORTPTR, 0, 0, 0); 
@@ -90,7 +104,6 @@ void syscall_exHandler(int sysCode){
     }
     else if(sysCode == 12){
         //SYSCALL (WRITETERMINAL, char *virtAddr,int len, 0)
-        boo();
         if(state_except->reg_a2 >= 0 && state_except->reg_a2 <= 128 && state_except->reg_a1 >= VPNBASE && state_except->reg_a1 <= USERSTACKTOP){
             //parametri corretti, posso procedere
             char* stringa = (char*) state_except->reg_a1;
@@ -134,7 +147,7 @@ void syscall_exHandler(int sysCode){
         }else{
             //parametri corretti, posso procedere
             char* stringa = state_except->reg_a1;
-            char rcv_char = EOS;
+            char rcv_char;
             int position = 40 + support_except->sup_asid - 1;
             devreg_t* base_regdev = 0x10000054 + (4 * 0x80) + ((support_except->sup_asid - 1) * 0x10);
             int return_msg, counter_char = 0;
@@ -149,12 +162,11 @@ void syscall_exHandler(int sysCode){
                 atomON();
                 base_regdev->term.recv_command = TRANSMITCHAR;
                 return_msg = SYSCALL(IOWAIT, 7, support_except->sup_asid - 1, TRUE);
+                
+                statusBIT = base_regdev->term.recv_status & RECVSTATUSBIT;
+                rcv_char = return_msg >> 8;
                 atomOFF();
-                //statusBIT = base_regdev->term.recv_status & RECVSTATUSBIT;
-                rcv_char = (base_regdev->term.recv_status >> 8) & RECVSTATUSBIT;
-               
                 if (rcv_char == '\n'){
-                    boo();
                     /**(stringa + counter_char*sizeof(char)) = EOS;
                     atomON();
                     base_regdev->term.recv_status = (rcv_char << 8) | READY;
@@ -166,11 +178,12 @@ void syscall_exHandler(int sysCode){
                 //*(stringa + counter_char * sizeof(char)) = rcv_char;
                 counter_char += 1;
             }
+
             //rilascio mutua esclusione sul semaforo del device register
             SYSCALL(VERHOGEN, &supLevDeviceSem[position], 0, 0);
 
-            if (return_msg != 5){ //qualcosa è andato storto
-                state_except->reg_v0 = return_msg;
+            if (statusBIT != 5){ //qualcosa è andato storto
+                state_except->reg_v0 = statusBIT;
             }else{ //stringa stampata correttamente
                 state_except->reg_v0 = counter_char; //numero caratteri ricevuti (sottraggo il carattere EOS)
             }
@@ -178,6 +191,7 @@ void syscall_exHandler(int sysCode){
     }
     if(sysCode != 9){
         state_except->pc_epc += 4;
+        global4 = state_except;
         LDST(state_except);
     }
 }

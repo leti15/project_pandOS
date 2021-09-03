@@ -15,6 +15,7 @@ void scheduler()
         if (proc_count > 0 && softB_count > 0){  
             //disabilitare PLT e abilitare interrupts
             setSTATUS(STATE_WAIT);
+            bp();
             WAIT();
         }
         if (proc_count > 0 && softB_count == 0){
