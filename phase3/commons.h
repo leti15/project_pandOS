@@ -50,7 +50,7 @@ typedef __SIZE_TYPE__ size_t;
 
 #define VPNBASE 0x80000000
 #define STACKPG 0xBFFFF000
-#define Nproc 1
+#define Nproc 2
 
 extern int devicesem[DEVARRSIZE];
 extern int count_time;
@@ -85,6 +85,9 @@ extern void boo();
 */
 extern void sys_terminate();
 extern void sys_8();
+extern void sys_11(support_t* support_except);
+extern void sys_12(support_t* support_except);
+extern void sys_13(support_t* support_except);
 
 void * memcpy (void *dest, const void *src, size_t len);
 void init_devices();

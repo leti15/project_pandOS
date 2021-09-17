@@ -1,12 +1,6 @@
 #include "initProc.h"
 
 
-
-int devRegSem[8];
-int supLevDeviceSem[48];
-int masterSEM;
-
-
 void test(){
     init_spt();
     init_devices();

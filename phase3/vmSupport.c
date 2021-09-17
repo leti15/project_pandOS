@@ -77,10 +77,10 @@ unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned i
 
         
         int device_num = processID; //penso sia giusto cosi....(non sono sicura)
-        devreg_t* base = ((unsigned int) GET_devAddrBase(4, device_num));//=(Nlinea, Ndevice)
+        devreg_t* base = (devreg_t*)((unsigned int) GET_devAddrBase(4, device_num));//=(Nlinea, Ndevice)
             
         //ottengo mutua esclusione sul device register
-        SYSCALL(PASSEREN, &devRegSem[processID], 0, 0);
+        SYSCALL(PASSEREN, (unsigned int)&devRegSem[processID], 0, 0);
 
         //scrivo campo DATA0
         base->dtp.data0 = to_write_or_read; 
@@ -100,7 +100,7 @@ unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned i
         atomOFF();
 
         //rilascio semaforo device register
-        SYSCALL(VERHOGEN, &devRegSem[processID], 0, 0);
+        SYSCALL(VERHOGEN,(unsigned int) &devRegSem[processID], 0, 0);
 
         if (base->dtp.status != READY) 
             SYSCALL(TERMINATE, 0, 0, 0);
@@ -109,14 +109,14 @@ unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned i
 int global3;
 void pager(){
     state_reg = (state_t *)BIOSDATAPAGE;
-    support_struct = SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    support_struct = (support_t*)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause_reg = (support_struct->sup_exceptState[0].cause & GETEXECCODE) >> CAUSESHIFT;
 
     if(cause_reg == 1){ //invalid modification
 
         program_trap_exHandler();
     }else{
-        SYSCALL(PASSEREN, &swp_sem, 0, 0);
+        SYSCALL(PASSEREN, (unsigned int)&swp_sem, 0, 0);
         int missing_page_entryHI = support_struct->sup_exceptState[PGFAULTEXCEPT].entry_hi; //campo entryHI contenente la pagina virtuale che ha causato il page fault
         int p;
         if (missing_page_entryHI >= STACKPG && missing_page_entryHI <= USERSTACKTOP)
@@ -201,7 +201,7 @@ void pager(){
     /**FINO A QUI (atomicamente)*/
         atomOFF();
 
-        SYSCALL(VERHOGEN, & swp_sem, 0, 0);
+        SYSCALL(VERHOGEN, (unsigned int)& swp_sem, 0, 0);
         LDST((state_t*) &support_struct->sup_exceptState[PGFAULTEXCEPT]);
     }
 
