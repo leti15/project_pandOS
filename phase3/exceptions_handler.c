@@ -11,7 +11,7 @@
              * 48: DEVICE INTERVAL TIMER
              * 
             */
-state_t *state_reg;
+
 /*
 void uTLB_RefillHandler(){
     //state_reg = (state_t *)BIOSDATAPAGE;
@@ -30,7 +30,7 @@ void uTLB_RefillHandler(){
 void exception_handler()
 { //appena entra qui e' in kernel mode con interrupt disabilitati!!!
 
-    state_reg = (state_t *)BIOSDATAPAGE;
+    state_t * state_reg = (state_t *)BIOSDATAPAGE;
 
     unsigned int current_causeCode = getCAUSE();
     int exCode = CAUSE_GET_EXCCODE(current_causeCode);
@@ -67,6 +67,7 @@ void SYS_handler()
     else
     {
         //INCREMENTIAMO IL PC
+        state_t * state_reg = (state_t *)BIOSDATAPAGE;
         state_reg->pc_epc = state_reg->pc_epc + 4;
 
         int current_a0 = state_reg->reg_a0;
@@ -109,10 +110,12 @@ void SYS_handler()
         }
         else if (current_a0 == 3) //passeren            SYSCALL(PASSEREN, current_proc->p_semAdd, 0, 0);
         {
+            state_t* state_reg = (state_t *)BIOSDATAPAGE;
             sys_p((int *)state_reg->reg_a1);
         }
         else if (current_a0 == 4) //verhogen  SYSCALL(VERHOGEN, current_proc->p_semAdd, 0, 0);
         {
+            state_t* state_reg = (state_t *)BIOSDATAPAGE;
             pcb_PTR temp = sys_v((int *)state_reg->reg_a1);
             LDST(state_reg);
         }
@@ -129,6 +132,8 @@ void SYS_handler()
              * 48: DEVICE INTERVAL TIMER
              * 
             */
+
+            state_t* state_reg = (state_t *)BIOSDATAPAGE;
             if (state_reg->reg_a1 == (int)NULL || state_reg->reg_a2 == (int)NULL)
             {
                 sys_terminate();
@@ -151,6 +156,8 @@ void SYS_handler()
         }
         else if (current_a0 == 6) //get CPU time  SYSCALL(GETCPUTIME, 0, 0, 0);
         {
+
+            state_t* state_reg = (state_t *)BIOSDATAPAGE;
             //AGGIORNIAMO CPU TIME
             unsigned int tmp = STCK(tmp);
             state_reg->gpr[1] = current_proc->p_time + tmp - count_time;
@@ -159,6 +166,9 @@ void SYS_handler()
         }
         else if (current_a0 == 7) //wait for clock    SYSCALL(WAITCLOCK, 0, 0, 0);
         {
+
+            state_t* state_reg = (state_t *)BIOSDATAPAGE;
+
             //incrementiamo softblocked se è un semAdd di device
             softB_count = softB_count + 1;
 
@@ -362,6 +372,8 @@ int interrupt_handler()
 
 void sys_8()
 {
+
+    state_t* state_reg = (state_t *)BIOSDATAPAGE;
     state_reg->reg_v0 = (unsigned int)current_proc->p_supportStruct;
     LDST(state_reg);
 }
@@ -373,7 +385,9 @@ void sys_terminate()
 }
 
 void sys_t(pcb_PTR proc)
-{
+{   
+    state_t* state_reg = (state_t *)BIOSDATAPAGE;
+
     if (proc != NULL)
     {
         outChild(proc);
@@ -412,6 +426,8 @@ void sys_p(int *temp)
     else
     {
 
+        state_t* state_reg = (state_t *)BIOSDATAPAGE;
+
         *temp = *temp - 1; //decremento risorse
         if (*(temp) < 0)
         {
@@ -449,11 +465,14 @@ pcb_PTR sys_v(int *temp)
     }
     else
     {
+        state_t* state_reg = (state_t *)BIOSDATAPAGE;
+
         pcb_PTR newpcb;
         *temp = *temp + 1; //aumento risorse
 
         //ora c'è una risorsa disponibile quindi sblocco un processo
         newpcb = removeBlocked(temp);
+
 
         if (newpcb != NULL) //se è andato tutto bene (removeBlocked ha restituito un pcb)
         {

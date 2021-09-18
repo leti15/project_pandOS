@@ -2,7 +2,6 @@
 
 static pcb_t pcbFree_table[MAXPROC];
 static pcb_PTR pcbFree_h;
-extern void bp();
 
 /*Inizializza la pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
  * Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.*/
@@ -213,21 +212,14 @@ int emptyChild(pcb_t *p){
 void insertChild(pcb_t *prnt, pcb_t *p)
 {   
     if (prnt != NULL && p != NULL)
-    {   bp();
+    {  
         if(prnt->p_child != NULL)
-        {   bp1();
+        {   
             //troviamo il pcb esistente che punter� al nuovo pcb
             pcb_t * last = prnt->p_child->p_prev_sib;
-            bp3();
-
-
-            if(last == NULL)
-                boo();
-
+     
             //l'ultimo figlio punta al nuovo figlio
             last->p_next_sib = p;
-
-            
 
             p->p_prev_sib = last;
             p->p_prnt = prnt;
@@ -235,18 +227,12 @@ void insertChild(pcb_t *prnt, pcb_t *p)
             prnt->p_child->p_prev_sib = p;
            
         }else{
-            bp();
             prnt->p_child = p;
-            b4();
-            //il problema è qui (DBE)
             p->p_prnt = prnt;
-            b5();
             p->p_prev_sib = p;
-            b6();
             p->p_next_sib = p;
         }
     }
-bp3();
 }
 
 /*Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL.*/

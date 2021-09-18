@@ -1,16 +1,11 @@
 #include "vmSupport.h"
-
-swap_t  spt[2*Nproc];
+swap_t  spt[ POOLSIZE ];
 int swp_sem;
-state_t* state_reg;
-support_t* support_struct;
 
 int missing_global;
 
 void uTLB_RefillHandler(){
-    state_reg = (state_t *)BIOSDATAPAGE;
-
-    bp();
+    state_t* state_reg = (state_t *)BIOSDATAPAGE;
 
     int missing_page = state_reg->entry_hi;
     missing_global = missing_page;
@@ -20,14 +15,9 @@ void uTLB_RefillHandler(){
         missing_page = ( state_reg->entry_hi - VPNBASE ) >> 12;
         
     missing_global = missing_page;
-    bp1();
 
     pteEntry_t new_pgEntry = current_proc->p_supportStruct->sup_privatePgTbl[missing_page];
 
-    bp2();
-
-
-    missing_global = new_pgEntry.pte_entryHI;
     setENTRYHI( (unsigned int) new_pgEntry.pte_entryHI);
     setENTRYLO( (unsigned int) new_pgEntry.pte_entryLO);
     TLBWR();
@@ -39,8 +29,6 @@ void uTLB_RefillHandler(){
 void init_spt() {
     for (int i = 0; i < POOLSIZE; i += 1) {
         spt[i].sw_asid = NOPROC;
-        //spt[i].sw_pageNo = 0;
-        //spt[i].sw_pte = NULL;
     }
     swp_sem = 1;
 }
@@ -108,12 +96,11 @@ unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned i
 
 int global3;
 void pager(){
-    state_reg = (state_t *)BIOSDATAPAGE;
-    support_struct = (support_t*)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    state_t* state_reg = (state_t *)BIOSDATAPAGE;
+    support_t * support_struct = (support_t*)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause_reg = (support_struct->sup_exceptState[0].cause & GETEXECCODE) >> CAUSESHIFT;
 
     if(cause_reg == 1){ //invalid modification
-
         program_trap_exHandler();
     }else{
         SYSCALL(PASSEREN, (unsigned int)&swp_sem, 0, 0);
@@ -132,9 +119,9 @@ void pager(){
         int old_owner = spt[frame_to_replace].sw_asid; //= x = processo proprietario della pagina nel frame da liberare
 
         if (spt[frame_to_replace].sw_pte->pte_entryLO & VALIDON){
-            boo();
             //libero frame perchè la pagina era valida
             int vPN = spt[frame_to_replace].sw_pageNo;   //= k = virtual page number da liberare
+            global3 = vPN;
 
             spt[frame_to_replace].sw_pte->pte_entryLO &= ~(0b00000000000000000000001000000000);//dirty bit ("V") == 0 = NOTvalid
 
@@ -166,12 +153,8 @@ void pager(){
         //leggere dal backing store del processo che ha causato il page fault e caricare in memoria la pagina mancante
         ReadWrite_from_backStore ( support_struct->sup_asid - 1, p, address_data, 1); 
 
-        bp1();
-
     /**DA FARE ATOMICAMENTE = disabilitare interrupts*/
         atomON();
-
-        bp2();
 
         //updating swap pool 
         /*
@@ -185,8 +168,6 @@ void pager(){
         spt[frame_to_replace].sw_pte = &(support_struct->sup_privatePgTbl[p]);
         spt[frame_to_replace].sw_pageNo = p; 
         spt[frame_to_replace].sw_asid = support_struct->sup_asid;//segnalo che il nuovo processo sta ora occupando 'frame_to_replace'
-        
-        bp3();
 
         /**Update the Current Process’s Page Table entry for page p to indicate it is
         now present (V bit) and occupying frame i (PFN field).*/
@@ -202,9 +183,17 @@ void pager(){
         atomOFF();
 
         SYSCALL(VERHOGEN, (unsigned int)& swp_sem, 0, 0);
-        LDST((state_t*) &support_struct->sup_exceptState[PGFAULTEXCEPT]);
+        LDST((state_t*) &(support_struct->sup_exceptState[PGFAULTEXCEPT]));
     }
 
 }
 
 
+void DeleteProcPages(int asid){
+
+    for (int i = 0 ; i< POOLSIZE; i +=1)
+        if(spt[i].sw_asid == asid)
+            spt[i].sw_asid = NOPROC;
+
+
+}

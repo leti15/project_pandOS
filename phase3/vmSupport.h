@@ -18,5 +18,6 @@ int replacement_FIFO();
 void update_TLB();
 unsigned int ReadWrite_from_backStore(int processID, int blocknumber, unsigned int to_write_or_read, int readMode);
 void pager();
+void DeleteProcPages(int asid);
 
 #endif

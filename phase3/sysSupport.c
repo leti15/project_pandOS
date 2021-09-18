@@ -43,20 +43,11 @@ void syscall_exHandler(int sysCode){
     support_t* support_except;
     support_except = (support_t*)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     if(sysCode == 9){ //SYSCALL (TERMINATE, 0, 0, 0);
-        //rendo invalide le pagine utilizzate dal processo da eliminare
-        for (int i = 0; i<MAXPAGES; i += 1)
-            support_except->sup_privatePgTbl[i].pte_entryLO = support_except->sup_privatePgTbl[i].pte_entryLO & 0b11111111111111111111110111111111;
-        SYSCALL(VERHOGEN, (unsigned int)&masterSEM, 0, 0);
-        SYSCALL (TERMPROCESS, 0, 0, 0);
+        sys_9(support_except);
     }
     else if(sysCode == 10){
         //SYSCALL (GETTOD, 0, 0, 0)
-        state_t* state_except;
-        state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
-        unsigned int time;
-        STCK(time);
-        state_except->reg_v0 = time; //restituisco in v0
-
+       sys_10(support_except);
     }
     else if(sysCode == 11){
         sys_11(support_except);
@@ -88,6 +79,37 @@ void addCharRecvd(char stringa[], int len, char c, char new_stringa[]){
     new_stringa[len] = EOS;
 }
 
+void sys_9(support_t* support_except){
+    //rendo invalide le pagine utilizzate dal processo da eliminare
+        /*for (int i = 0; i<MAXPAGES; i += 1)
+            support_except->sup_privatePgTbl[i].pte_entryLO = support_except->sup_privatePgTbl[i].pte_entryLO & 0b11111111111111111111110111111111;
+        */
+
+       DeleteProcPages(support_except->sup_asid);
+
+
+        //libero semafori del livello supporto
+        for(int i = 0; i < 8; i += 1)
+            if(supLevDeviceSem[support_except->sup_asid - 1 + (i*8)] <= 0)
+                SYSCALL (VERHOGEN, &supLevDeviceSem[support_except->sup_asid - 1 + (i*8)], 0, 0);
+
+        if(devRegSem[support_except->sup_asid-1] <= 0)
+            SYSCALL (VERHOGEN, &devRegSem[support_except->sup_asid-1], 0, 0);
+        
+        
+        SYSCALL(VERHOGEN, (unsigned int)&masterSEM, 0, 0);
+        SYSCALL (TERMPROCESS, 0, 0, 0);
+}
+
+void sys_10(support_t* support_except){
+        state_t* state_except;
+        state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
+        unsigned int time;
+        STCK(time);
+        state_except->reg_v0 = time; //restituisco in v0
+
+}
+
 void sys_11( support_t* support_except){
 //SYSCALL (WRITEPRINTER, char *virtAddr,int len, 0)
         /**If the operation ends with a status other than
@@ -99,7 +121,7 @@ void sys_11( support_t* support_except){
         state_t* state_except;
         state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
         if(state_except->reg_a2 < 0 || state_except->reg_a2 > 128 || state_except->reg_a1 < 0x8000000B0 || state_except->reg_a1 > 0xC000000 ){
-            SYSCALL (TERMPROCESS, 0, 0, 0);
+            SYSCALL (TERMINATE, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
             char stringa[state_except->reg_a2];
@@ -168,7 +190,7 @@ void sys_12( support_t* support_except){
                 state_except->reg_v0 = i; //numero caratteri trasmessi (non conto l'EOS)
             }
         } else{
-            SYSCALL (TERMPROCESS, 0, 0, 0);
+            SYSCALL (TERMINATE, 0, 0, 0);
         }
 
 
@@ -179,7 +201,7 @@ void sys_13( support_t* support_except){
         state_t* state_except;
         state_except = (state_t*) &(support_except->sup_exceptState[GENERALEXCEPT]);
         if( state_except->reg_a1 < VPNBASE || state_except->reg_a1 > USERSTACKTOP ){
-            SYSCALL (TERMPROCESS, 0, 0, 0);
+            SYSCALL (TERMINATE, 0, 0, 0);
         }else{
             //parametri corretti, posso procedere
             char* stringa = (char*) state_except->reg_a1;
